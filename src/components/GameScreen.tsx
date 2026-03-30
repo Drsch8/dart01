@@ -42,7 +42,6 @@ function MobileInputDisplay({ onShowScores }: { onShowScores: () => void }) {
     <div className="px-5 py-2 border-b border-rule bg-paper flex items-center gap-3">
       <span className={`font-mono font-bold text-3xl flex-1 ${isInvalid ? 'text-bust' : 'text-ink'}`}>
         {inputStr}
-        <span className="animate-pulse font-light text-ink-light">|</span>
         {hint && (
           <span className="text-ink-light text-lg font-mono ml-3">{hint}</span>
         )}

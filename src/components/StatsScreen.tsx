@@ -15,13 +15,13 @@ export function StatsScreen() {
 
   return (
     <div className="min-h-screen bg-bg">
-      <div className="flex items-center justify-between px-4 py-3 border-b border-rule bg-paper sticky top-0">
-        <span className="font-display font-bold text-lg">Statistics</span>
+      <div className="flex items-center justify-between px-5 py-3 border-b border-rule bg-paper sticky top-0">
+        <span className="font-display font-bold text-2xl tracking-tight">Statistics</span>
         <div className="flex gap-2">
           {!matchFinished && (
             <button
               onClick={() => setScreen('game')}
-              className="border border-rule px-3 py-1.5 text-xs text-ink-light font-mono hover:border-ink hover:text-ink transition-colors"
+              className="border border-rule px-4 py-2 text-sm text-ink-light font-mono hover:border-ink hover:text-ink transition-colors"
             >
               ← Back
             </button>
@@ -29,14 +29,14 @@ export function StatsScreen() {
           {matchFinished && (
             <button
               onClick={() => startGame(config)}
-              className="border border-rule px-3 py-1.5 text-xs text-ink-light font-mono hover:border-ink hover:text-ink transition-colors"
+              className="border border-rule px-4 py-2 text-sm text-ink-light font-mono hover:border-ink hover:text-ink transition-colors"
             >
               Rematch
             </button>
           )}
           <button
             onClick={() => setScreen('setup')}
-            className="border border-rule px-3 py-1.5 text-xs text-ink-light font-mono hover:border-ink hover:text-ink transition-colors"
+            className="border border-rule px-4 py-2 text-sm text-ink-light font-mono hover:border-ink hover:text-ink transition-colors"
           >
             New game
           </button>

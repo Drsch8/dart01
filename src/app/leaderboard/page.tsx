@@ -70,11 +70,11 @@ export default async function LeaderboardPage() {
   return (
     <div className="min-h-screen bg-bg">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 md:px-8 py-4 border-b border-rule bg-paper sticky top-0 z-10">
+      <div className="flex items-center justify-between px-5 py-3 border-b border-rule bg-paper sticky top-0 z-10">
         <h1 className="font-display font-black text-2xl tracking-tight">Leaderboard</h1>
         <Link
           href="/"
-          className="border border-rule px-3 py-1.5 text-xs text-ink-light font-mono hover:border-ink hover:text-ink transition-colors"
+          className="border border-rule px-4 py-2 text-sm text-ink-light font-mono hover:border-ink hover:text-ink transition-colors"
         >
           ← Back
         </Link>

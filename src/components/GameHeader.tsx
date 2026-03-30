@@ -56,7 +56,7 @@ export function GameHeader() {
 
   return (
     <div className="flex items-center justify-between px-5 py-3 border-b border-rule bg-paper sticky top-0 z-20">
-      <span className="font-display font-bold text-2xl tracking-tight">Darts</span>
+      <button onClick={newGame} className="font-display font-bold text-2xl tracking-tight bg-transparent border-none cursor-pointer">Darts</button>
 
       {/* Desktop: all buttons inline */}
       <div className="hidden md:flex gap-2">

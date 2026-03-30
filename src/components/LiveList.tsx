@@ -5,12 +5,16 @@ import { validateInput } from '@/lib/engine'
 import type { RoundEntry } from '@/types/game'
 
 function CompletedCell({ entry, right }: { entry: RoundEntry | null; right?: boolean }) {
-  if (!entry) return <span className="text-ink-faint">—</span>
+  if (!entry) return (
+    <span className={`flex gap-3 ${right ? 'justify-end' : ''}`}>
+      <span className="text-ink-faint w-10 text-right">—</span>
+    </span>
+  )
   return (
-    <span className={`inline-flex gap-2 items-baseline ${right ? 'justify-end' : ''}`}>
-      <span className="text-ink font-semibold">{entry.score}</span>
+    <span className={`flex gap-3 items-baseline ${right ? 'flex-row-reverse' : ''}`}>
+      <span className="text-ink font-semibold w-10 text-right">{entry.score}</span>
+      <span className="text-ink-light w-10 text-right">{entry.remain}</span>
       {entry.bust && <span className="text-bust text-xs">B</span>}
-      <span className="text-ink-light">{entry.remain}</span>
     </span>
   )
 }
@@ -44,43 +48,41 @@ export function LiveList() {
           : `sc ${validation.score}`
         : ''
       return (
-        <span className={`inline-flex items-baseline gap-2 ${right ? 'justify-end' : ''}`}>
-          <span className={`font-mono font-bold text-2xl ${isInvalid ? 'text-bust' : 'text-ink'}`}>
-            {inputStr}<span className="animate-pulse font-light text-ink-light">|</span>
+        <span className={`flex gap-3 items-baseline ${right ? 'flex-row-reverse' : ''}`}>
+          <span className={`font-mono font-bold text-2xl md:text-3xl w-10 text-right ${isInvalid ? 'text-bust' : 'text-ink'}`}>
+            {inputStr}
           </span>
           {hint && <span className="text-ink-light text-base">{hint}</span>}
         </span>
       )
     }
 
-    return <span className="text-ink-faint">—</span>
+    return (
+      <span className={`flex ${right ? 'justify-end' : ''}`}>
+        <span className="text-ink-faint w-10 text-right">—</span>
+      </span>
+    )
   }
 
   const liveRound = rounds.length + 1
+  const cols = training ? 'grid-cols-[2.5rem_1fr]' : 'grid-cols-[2.5rem_1fr_1fr]'
 
   return (
     <div className="flex-1 overflow-y-auto">
       <div className="px-5 py-3">
 
-        {/* Column headers */}
-        <div className={`grid ${training ? 'grid-cols-[3rem_1fr]' : 'grid-cols-[3rem_1fr_1fr]'} gap-4 text-xs tracking-[0.12em] uppercase text-ink-faint border-b border-rule pb-2 font-mono sticky top-0 bg-paper`}>
-          <span>#</span>
-          <span />
-          {!training && <span />}
-        </div>
-
         {/* Completed rounds */}
         {rounds.map((round, i) => (
-          <div key={i} className={`grid ${training ? 'grid-cols-[3rem_1fr]' : 'grid-cols-[3rem_1fr_1fr]'} gap-4 text-base border-b border-rule/30 py-2 items-center font-mono`}>
-            <span className="text-ink-faint text-sm">{i + 1}</span>
+          <div key={i} className={`grid ${cols} gap-2 text-base md:text-lg border-b border-rule/30 py-2 items-center font-mono`}>
+            <span className="text-ink-faint text-sm md:text-base text-right">{(i + 1) * 3}</span>
             <span><CompletedCell entry={round.p0} /></span>
             {!training && <span className="flex justify-end"><CompletedCell entry={round.p1} right /></span>}
           </div>
         ))}
 
         {/* Live input row */}
-        <div className={`grid ${training ? 'grid-cols-[3rem_1fr]' : 'grid-cols-[3rem_1fr_1fr]'} gap-4 py-3 items-center font-mono border-t-2 border-ink mt-1`}>
-          <span className="text-ink-faint text-sm">{liveRound}</span>
+        <div className={`grid ${cols} gap-2 py-3 items-center font-mono mt-3`}>
+          <span className="text-ink-faint text-sm md:text-base text-right">{liveRound * 3}</span>
           <span>{renderLiveCell(0)}</span>
           {!training && <span className="flex justify-end">{renderLiveCell(1, true)}</span>}
         </div>

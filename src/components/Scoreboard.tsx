@@ -28,7 +28,7 @@ function PlayerBoard({ idx }: { idx: 0 | 1 }) {
 
   const scoreColor = isCurrent
     ? (tag === 'finish' ? 'text-finish' : tag === 'bogey' ? 'text-bogey' : tag === 'caution' ? 'text-caution' : 'text-ink')
-    : 'text-ink-faint'
+    : 'text-ink-light'
 
   const tagColor =
     tag === 'finish' ? 'text-finish' :
@@ -37,37 +37,43 @@ function PlayerBoard({ idx }: { idx: 0 | 1 }) {
     ''
 
   return (
-    <div className={`relative flex flex-col p-4 md:p-6 transition-colors
-      ${idx === 0 ? 'border-r border-rule' : ''}
-      ${isCurrent
-        ? 'bg-paper shadow-[inset_0_0_0_2px_#1a1a18] z-10'
-        : 'bg-bg'
-      }`}
+    <div
+      className={`relative flex flex-col p-4 md:p-6
+        ${idx === 0 ? 'border-r border-rule' : ''}
+        ${isCurrent ? 'bg-paper shadow-[inset_0_0_0_2px_#1a1a18] z-10' : 'bg-bg'}`}
+      style={{ transition: 'background-color 200ms ease-in-out, box-shadow 200ms ease-in-out' }}
     >
       {/* Name */}
-      <div className={`text-sm font-mono uppercase tracking-wide mb-2 truncate
-        ${isCurrent ? 'text-ink' : 'text-ink-faint'}`}>
+      <div
+        className={`text-sm md:text-base font-mono uppercase tracking-wide mb-2 truncate ${isCurrent ? 'text-ink' : 'text-ink-light'}`}
+        style={{ transition: 'color 200ms ease-in-out' }}
+      >
         {name}
       </div>
 
       {/* Score */}
-      <div className={`font-display font-black leading-none tracking-tight transition-colors
-        ${isCurrent
-          ? 'text-[clamp(4rem,11vw,6rem)]'
-          : 'text-[clamp(2.5rem,7vw,4rem)]'
-        }
-        ${scoreColor}`}>
+      <div
+        className={`font-display font-black leading-none tracking-tight
+          ${isCurrent ? 'text-[clamp(4rem,12vw,8rem)]' : 'text-[clamp(2.5rem,8vw,5.5rem)]'}
+          ${scoreColor}`}
+        style={{ transition: 'color 200ms ease-in-out' }}
+      >
         {score}
       </div>
 
       {/* Tag */}
-      <div className={`text-xs tracking-[0.1em] uppercase h-4 mt-1
-        ${isCurrent ? tagColor : 'opacity-0'}`}>
+      <div
+        className={`text-xs tracking-[0.1em] uppercase h-4 mt-1 ${isCurrent ? tagColor : 'opacity-0'}`}
+        style={{ transition: 'opacity 200ms ease-in-out, color 200ms ease-in-out' }}
+      >
         {tag === 'finish' ? 'Finish' : tag === 'bogey' ? 'Bogey' : ''}
       </div>
 
-      {/* Stats — pinned to bottom, no animation */}
-      <div className={`mt-auto pt-2 ${isCurrent ? '' : 'opacity-25'}`}>
+      {/* Stats — pinned to bottom */}
+      <div
+        className={`mt-auto pt-2 ${isCurrent ? 'opacity-100' : 'opacity-50'}`}
+        style={{ transition: 'opacity 200ms ease-in-out' }}
+      >
         {/* Mobile: compact */}
         <div className="flex gap-4 text-sm text-ink-light md:hidden font-mono">
           <span>avg {avg}</span>
@@ -75,7 +81,7 @@ function PlayerBoard({ idx }: { idx: 0 | 1 }) {
         </div>
 
         {/* Desktop: full grid */}
-        <div className="hidden md:grid grid-cols-3 gap-x-4 gap-y-1 text-sm text-ink-light font-mono">
+        <div className="hidden md:grid grid-cols-3 gap-x-4 gap-y-1 text-sm text-ink-light font-mono whitespace-nowrap">
           <span>avg {avg}</span>
           <span>f9 {f9}</span>
           <span>co {coPct}</span>

@@ -40,6 +40,7 @@ export function PlayerNameInput({ label, value, onChange, inputClassName, onEnte
       <input
         className={inputClassName}
         value={value}
+        placeholder={label}
         maxLength={20}
         onChange={e => { onChange(e.target.value); setOpen(true) }}
         onFocus={() => setOpen(true)}

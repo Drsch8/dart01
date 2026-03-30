@@ -3,14 +3,25 @@ import { useState, useEffect } from 'react'
 import type { PlayerStat } from '@/app/api/players/route'
 
 export function SetupStats() {
-  const [players, setPlayers] = useState<PlayerStat[]>([])
+  const [players, setPlayers] = useState<PlayerStat[] | null>(null)
 
   useEffect(() => {
     fetch('/api/players')
       .then(r => r.json())
       .then(d => setPlayers(d.players))
-      .catch(() => {})
+      .catch(() => setPlayers([]))
   }, [])
+
+  if (players === null) return (
+    <div className="bg-paper border border-rule p-6 animate-pulse">
+      <div className="text-2xs tracking-[0.12em] uppercase text-ink-light mb-4">Career Stats</div>
+      <div className="flex flex-col gap-3">
+        {[1, 2, 3].map(i => (
+          <div key={i} className="h-4 bg-rule rounded" style={{ width: `${70 - i * 8}%` }} />
+        ))}
+      </div>
+    </div>
+  )
 
   if (players.length === 0) return null
 
