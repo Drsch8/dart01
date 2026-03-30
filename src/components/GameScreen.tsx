@@ -16,12 +16,14 @@ export function GameScreen() {
     <div className="min-h-screen bg-bg flex flex-col">
       <GameHeader />
 
-      {/* Content: stacked on mobile, side-by-side on desktop */}
+      {/* Scoreboard: full width on all sizes */}
+      <Scoreboard />
+
+      {/* Below scoreboard: input left, log right on desktop */}
       <div className="flex flex-col md:flex-row flex-1 md:overflow-hidden">
 
-        {/* ── Left panel (controls) ── */}
-        <div className="flex flex-col md:w-[480px] md:flex-shrink-0 md:border-r md:border-rule md:overflow-y-auto">
-          <Scoreboard />
+        {/* ── Input panel ── */}
+        <div className="flex flex-col md:w-[400px] md:flex-shrink-0 md:border-r md:border-rule md:overflow-y-auto">
           <CheckoutHint />
           <InputArea />
           <QuickScores />
@@ -29,16 +31,17 @@ export function GameScreen() {
           {/* Numpad: mobile only */}
           <Numpad />
 
-          {/* Game log: mobile only (below numpad, limited height) */}
+          {/* Game log: mobile only */}
           <div className="md:hidden flex flex-col" style={{ minHeight: '12rem' }}>
             <GameLog />
           </div>
         </div>
 
-        {/* ── Right panel (game log): desktop only ── */}
+        {/* ── Game log: desktop only ── */}
         <div className="hidden md:flex flex-col flex-1 overflow-hidden">
           <GameLog />
         </div>
+
       </div>
 
       <LegOverlay />

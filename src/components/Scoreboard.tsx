@@ -26,11 +26,9 @@ function PlayerBoard({ idx }: { idx: 0 | 1 }) {
 
   const legsText = setsToWin > 1 ? `sets ${sets}  legs ${legs}` : `legs ${legs}`
 
-  const scoreColor =
-    tag === 'finish' ? 'text-finish' :
-    tag === 'bogey' ? 'text-bogey' :
-    tag === 'caution' ? 'text-caution' :
-    'text-ink'
+  const scoreColor = isCurrent
+    ? (tag === 'finish' ? 'text-finish' : tag === 'bogey' ? 'text-bogey' : tag === 'caution' ? 'text-caution' : 'text-ink')
+    : 'text-ink-light'
 
   const tagColor =
     tag === 'finish' ? 'text-finish' :
@@ -39,46 +37,56 @@ function PlayerBoard({ idx }: { idx: 0 | 1 }) {
     ''
 
   return (
-    <div className={`relative p-3 md:p-4 transition-colors
+    <div className={`relative flex flex-col p-4 md:p-5 transition-colors
       ${idx === 0 ? 'border-r border-rule' : ''}
-      ${isCurrent ? 'bg-bg' : 'bg-paper'}`}
+      ${isCurrent ? 'bg-paper' : 'bg-bg'}`}
     >
-      {/* Active indicator */}
+      {/* Active accent bar */}
       {isCurrent && (
-        <span className="absolute top-3 right-3 text-2xs text-ink-light">▶</span>
+        <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-ink" />
       )}
 
       {/* Name */}
-      <div className="text-2xs tracking-[0.1em] uppercase text-ink-light mb-1 truncate pr-4">
+      <div className={`text-2xs tracking-[0.1em] uppercase mb-1 truncate pr-4
+        ${isCurrent ? 'text-ink-light' : 'text-ink-faint'}`}>
+        {isCurrent && <span className="mr-1.5">▶</span>}
         {name}
       </div>
 
-      {/* Big score */}
-      <div className={`font-display font-black leading-none tracking-tight transition-colors
-        text-[clamp(2.5rem,8vw,4rem)] ${scoreColor}`}>
+      {/* Score */}
+      <div className={`font-display font-black leading-none tracking-tight transition-all
+        ${isCurrent
+          ? 'text-[clamp(3.5rem,10vw,5rem)]'
+          : 'text-[clamp(2rem,6vw,3rem)] opacity-40'
+        }
+        ${scoreColor}`}>
         {score}
       </div>
 
-      {/* Tag */}
-      <div className={`text-2xs tracking-[0.1em] uppercase h-3.5 mt-0.5 ${tagColor}`}>
+      {/* Tag — only shown when active */}
+      <div className={`text-2xs tracking-[0.1em] uppercase h-3.5 mt-0.5
+        ${isCurrent ? tagColor : 'opacity-0'}`}>
         {tag === 'finish' ? 'Finish' : tag === 'bogey' ? 'Bogey' : ''}
       </div>
 
-      {/* Mobile mini-stats */}
-      <div className="flex gap-4 mt-2 text-[11px] text-ink-light md:hidden">
-        <span>avg {avg}</span>
-        <span>{legsText}</span>
-      </div>
+      {/* Stats */}
+      <div className={`mt-2 transition-opacity ${isCurrent ? '' : 'opacity-30'}`}>
+        {/* Mobile: compact */}
+        <div className="flex gap-4 text-[11px] text-ink-light md:hidden">
+          <span>avg {avg}</span>
+          <span>{legsText}</span>
+        </div>
 
-      {/* Desktop expanded stats */}
-      <div className="hidden md:grid grid-cols-3 gap-x-3 gap-y-0.5 mt-2 text-[11px] text-ink-light">
-        <span>avg {avg}</span>
-        <span>f9 {f9}</span>
-        <span>co {coPct}</span>
-        <span>180s {ton80}</span>
-        <span>140+ {ton40}</span>
-        <span>100+ {tons}</span>
-        <span className="col-span-3">{legsText}</span>
+        {/* Desktop: full grid */}
+        <div className="hidden md:grid grid-cols-3 gap-x-3 gap-y-0.5 text-[11px] text-ink-light">
+          <span>avg {avg}</span>
+          <span>f9 {f9}</span>
+          <span>co {coPct}</span>
+          <span>180 {ton80}</span>
+          <span>140+ {ton40}</span>
+          <span>100+ {tons}</span>
+          <span className="col-span-3">{legsText}</span>
+        </div>
       </div>
     </div>
   )

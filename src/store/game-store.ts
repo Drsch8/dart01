@@ -106,6 +106,10 @@ export const useGameStore = create<GameStore>((set, get) => ({
   },
 
   quickScore: (value) => {
+    if (value === REM_SENTINEL) {
+      get().toggleMode()
+      return
+    }
     set(s => ({ ...s, inputStr: String(value) }))
     // auto-enter after a tick so display updates first
     setTimeout(() => get().enterScore(), 60)
