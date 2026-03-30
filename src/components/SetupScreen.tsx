@@ -101,9 +101,9 @@ export function SetupScreen() {
   const [showHelp, setShowHelp] = useState(false)
 
   useEffect(() => {
-    if (!localStorage.getItem('help-seen')) {
+    if (!localStorage.getItem('help-seen-v2')) {
       setShowHelp(true)
-      localStorage.setItem('help-seen', '1')
+      localStorage.setItem('help-seen-v2', '1')
     }
   }, [])
 
