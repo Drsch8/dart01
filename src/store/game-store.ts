@@ -1,8 +1,10 @@
+'use client'
 import { create } from 'zustand'
-import type { GameConfig, GameState, Screen, OverlayData } from '@/types/game'
+import type { GameConfig, GameState, Screen, PendingCheckout } from '@/types/game'
 import {
   createInitialGameState,
   processEnterScore,
+  processCheckout,
   appendDigit,
   deleteDigit,
   toggleInputMode,
@@ -10,21 +12,20 @@ import {
   undoLastTurn,
 } from '@/lib/engine'
 import { saveMatch } from '@/lib/save-match'
-import { REM_SENTINEL } from '@/lib/constants'
+import { REM_SENTINEL, FINISH_SENTINEL } from '@/lib/constants'
 
 interface GameStore extends GameState {
   screen: Screen
-  overlay: OverlayData | null
+  pendingCheckout: PendingCheckout | null
 
-  // Actions
   startGame: (config: GameConfig) => void
   appendDigit: (digit: string) => void
   deleteDigit: () => void
   toggleMode: () => void
   enterScore: () => void
   quickScore: (value: number) => void
+  confirmFinishDart: (darts: 1 | 2 | 3) => void
   undo: () => void
-  nextLeg: () => void
   newGame: () => void
   setScreen: (screen: Screen) => void
 }
@@ -43,13 +44,13 @@ const INITIAL_GAME = createInitialGameState(DEFAULT_CONFIG)
 export const useGameStore = create<GameStore>((set, get) => ({
   // ── Initial state ──
   screen: 'setup',
-  overlay: null,
+  pendingCheckout: null,
   ...INITIAL_GAME,
 
   // ── Actions ──
 
   startGame: (config) => {
-    set({ screen: 'game', overlay: null, ...createInitialGameState(config) })
+    set({ screen: 'game', pendingCheckout: null, ...createInitialGameState(config) })
   },
 
   appendDigit: (digit) => {
@@ -67,42 +68,12 @@ export const useGameStore = create<GameStore>((set, get) => ({
   enterScore: () => {
     const outcome = processEnterScore(gs(get()))
     if (outcome.type === 'invalid') return
-
-    if (outcome.type === 'leg-won') {
-      const { state, winner, checkoutScore, setWon, matchWon } = outcome
-      const winnerName = winner === 0 ? state.config.p1 : state.config.p2
-      const legAvgRaw = get().dartsThrown[winner] > 0
-        ? (get().totalScored[winner] / get().dartsThrown[winner] * 3).toFixed(1)
-        : '—'
-
-      const setsToWin = state.config.setsToWin
-      const scoreSummary = setsToWin > 1
-        ? `Sets ${state.sets[0]}–${state.sets[1]}  ·  Legs ${state.legs[0]}–${state.legs[1]}`
-        : `Legs ${state.legs[0]}–${state.legs[1]}`
-
-      const overlay: OverlayData = {
-        label: matchWon ? 'Match Win!' : setWon ? 'Set Win!' : 'Checkout!',
-        winner: winnerName,
-        checkoutScore,
-        legAvg: `Leg avg: ${legAvgRaw}`,
-        scoreSummary,
-        isMatchOver: matchWon,
-      }
-
-      set({ ...state, overlay })
-
-      if (matchWon) {
-        // Fire-and-forget — doesn't block the UI
-        saveMatch({
-          config: state.config,
-          winner: winnerName,
-          sets: state.sets,
-          allStats: state.allStats,
-        })
-      }
-    } else {
-      set({ ...outcome.state })
+    if (outcome.type === 'pending-checkout') {
+      set({ pendingCheckout: outcome.pending })
+      return
     }
+    // type === 'ok'
+    set({ ...outcome.state })
   },
 
   quickScore: (value) => {
@@ -112,28 +83,63 @@ export const useGameStore = create<GameStore>((set, get) => ({
         get().toggleMode()
         return
       }
-      // Enter the typed value as remaining without permanently switching mode
       const originalMode = state.inputMode
       set(s => ({ ...s, inputMode: 'remaining' as const }))
       get().enterScore()
       set(s => ({ ...s, inputMode: originalMode }))
       return
     }
+    if (value === FINISH_SENTINEL) {
+      const state = gs(get())
+      // Enter remaining score in score mode → remaining becomes 0
+      const remaining = state.scores[state.current]
+      const originalMode = state.inputMode
+      set(s => ({ ...s, inputStr: String(remaining), inputMode: 'score' as const }))
+      setTimeout(() => {
+        get().enterScore()
+        set(s => ({ ...s, inputMode: originalMode }))
+      }, 60)
+      return
+    }
     set(s => ({ ...s, inputStr: String(value) }))
-    // auto-enter after a tick so display updates first
     setTimeout(() => get().enterScore(), 60)
   },
 
+  confirmFinishDart: (darts) => {
+    const { pendingCheckout } = get()
+    if (!pendingCheckout) return
+
+    const outcome = processCheckout(pendingCheckout, darts)
+    set({ pendingCheckout: null })
+
+    const { state, winner, matchWon } = outcome
+
+    if (matchWon) {
+      const winnerName = winner === 0 ? state.config.p1 : state.config.p2
+      saveMatch({
+        config: state.config,
+        winner: winnerName,
+        sets: state.sets,
+        allStats: state.allStats,
+      })
+      set({ ...state, screen: 'stats' })
+    } else {
+      // Auto-advance to next leg without any overlay
+      set({ ...resetLeg(state) })
+    }
+  },
+
   undo: () => {
+    // Cancel pending dart picker
+    if (get().pendingCheckout) {
+      set({ pendingCheckout: null })
+      return
+    }
     set(s => ({ ...undoLastTurn(gs(s)) }))
   },
 
-  nextLeg: () => {
-    set(s => ({ ...resetLeg(gs(s)), overlay: null }))
-  },
-
   newGame: () => {
-    set({ screen: 'setup', overlay: null })
+    set({ screen: 'setup', pendingCheckout: null })
   },
 
   setScreen: (screen) => {

@@ -54,6 +54,13 @@ export interface OverlayData {
   isMatchOver: boolean
 }
 
+export interface PendingCheckout {
+  partialState: GameState   // score applied, darts NOT yet counted
+  winner: 0 | 1
+  checkoutScore: number
+  prevDartsThrown: number   // dartsThrown[winner] before this turn (for first9 calc)
+}
+
 /** Pure game state — no UI concerns. Passed to engine functions. */
 export interface GameState {
   config: GameConfig

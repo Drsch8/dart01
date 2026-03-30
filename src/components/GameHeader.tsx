@@ -7,11 +7,11 @@ export function GameHeader() {
   const undo = useGameStore(s => s.undo)
   const newGame = useGameStore(s => s.newGame)
 
-  const hdrBtn = 'border border-rule px-3 py-1.5 text-xs text-ink-light font-mono hover:border-ink hover:text-ink transition-colors cursor-pointer bg-transparent'
+  const hdrBtn = 'border border-rule px-4 py-2 text-sm text-ink-light font-mono hover:border-ink hover:text-ink transition-colors cursor-pointer bg-transparent'
 
   return (
-    <div className="flex items-center justify-between px-4 py-3 border-b border-rule bg-paper sticky top-0 z-10">
-      <span className="font-display font-bold text-lg tracking-tight">Darts</span>
+    <div className="flex items-center justify-between px-5 py-3 border-b border-rule bg-paper sticky top-0 z-20">
+      <span className="font-display font-bold text-2xl tracking-tight">Darts</span>
       <div className="flex gap-2">
         <Link href="/leaderboard" className={hdrBtn}>Board</Link>
         <button className={hdrBtn} onClick={() => setScreen('stats')}>Stats</button>

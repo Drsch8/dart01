@@ -1,27 +1,35 @@
 'use client'
 import { useGameStore } from '@/store/game-store'
-import { QUICK_SCORE_VALUES, QUICK_SCORE_LABELS, FKEY_LABELS, REM_SENTINEL } from '@/lib/constants'
+import { QUICK_SCORE_VALUES, QUICK_SCORE_LABELS, FKEY_LABELS, REM_SENTINEL, FINISH_SENTINEL } from '@/lib/constants'
+import { isFinishable } from '@/lib/checkouts'
 
 export function QuickScores() {
   const quickScore = useGameStore(s => s.quickScore)
   const inputMode = useGameStore(s => s.inputMode)
+  const current = useGameStore(s => s.current)
+  const currentScore = useGameStore(s => s.scores[current])
+
+  const canFinish = isFinishable(currentScore)
 
   return (
-    <div className="grid grid-cols-6 md:grid-cols-12 gap-px bg-rule border-t border-b border-rule">
+    <div className="grid grid-cols-6 md:grid-cols-12 gap-px bg-rule border-t border-rule shrink-0">
       {QUICK_SCORE_VALUES.map((val, i) => {
         const isRem = val === REM_SENTINEL
+        const isFinish = val === FINISH_SENTINEL
         const isRemActive = isRem && inputMode === 'remaining'
+
+        let cls = 'bg-paper text-ink hover:bg-bg active:bg-ink-faint'
+        if (isRemActive) cls = 'bg-ink text-bg'
+        else if (isFinish && canFinish) cls = 'bg-finish-bg text-finish hover:bg-finish/10'
+        else if (isFinish) cls = 'bg-paper text-ink-faint'
+
         return (
           <button
             key={i}
             onClick={() => quickScore(val)}
-            className={`py-2 text-center font-mono text-xs select-none cursor-pointer border-none outline-none touch-none transition-colors
-              ${isRemActive
-                ? 'bg-ink text-bg'
-                : 'bg-paper text-ink hover:bg-bg active:bg-ink-faint'
-              }`}
+            className={`py-3 text-center font-mono text-sm select-none cursor-pointer border-none outline-none touch-none transition-colors ${cls}`}
           >
-            <span className={`hidden md:block text-2xs leading-none mb-0.5 ${isRemActive ? 'text-bg/60' : 'text-ink-light'}`}>
+            <span className={`hidden md:block text-xs leading-none mb-0.5 ${isRemActive ? 'text-bg/60' : 'text-ink-light'}`}>
               {FKEY_LABELS[i]}
             </span>
             {QUICK_SCORE_LABELS[i]}

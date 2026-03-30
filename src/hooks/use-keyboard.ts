@@ -9,17 +9,17 @@ export function useKeyboard() {
   const enterScore = useGameStore(s => s.enterScore)
   const quickScore = useGameStore(s => s.quickScore)
   const undo = useGameStore(s => s.undo)
-  const overlay = useGameStore(s => s.overlay)
-  const nextLeg = useGameStore(s => s.nextLeg)
+  const confirmFinishDart = useGameStore(s => s.confirmFinishDart)
+  const pendingCheckout = useGameStore(s => s.pendingCheckout)
 
   useEffect(() => {
     function handleKey(e: KeyboardEvent) {
-      // If overlay is open, only handle Enter/Space
-      if (overlay) {
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault()
-          if (!overlay.isMatchOver) nextLeg()
-        }
+      // Finish dart picker active — only handle dart selection and undo
+      if (pendingCheckout) {
+        if (e.key === '1') { e.preventDefault(); confirmFinishDart(1); return }
+        if (e.key === '2') { e.preventDefault(); confirmFinishDart(2); return }
+        if (e.key === '3' || e.key === 'Enter') { e.preventDefault(); confirmFinishDart(3); return }
+        if ((e.ctrlKey || e.metaKey) && e.key === 'z') { e.preventDefault(); undo(); return }
         return
       }
 
@@ -38,5 +38,5 @@ export function useKeyboard() {
 
     window.addEventListener('keydown', handleKey)
     return () => window.removeEventListener('keydown', handleKey)
-  }, [overlay, appendDigit, deleteDigit, enterScore, quickScore, undo, nextLeg])
+  }, [pendingCheckout, appendDigit, deleteDigit, enterScore, quickScore, undo, confirmFinishDart])
 }

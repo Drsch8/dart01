@@ -1,4 +1,4 @@
-import type { GameConfig, GameState, PlayerStats, Round, LegHistory } from '@/types/game'
+import type { GameConfig, GameState, PlayerStats, Round, LegHistory, PendingCheckout } from '@/types/game'
 import { CHECKOUTS, BOGEY_NUMBERS } from './checkouts'
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -86,6 +86,7 @@ export function toggleInputMode(state: GameState): GameState {
 export type ScoreOutcome =
   | { type: 'invalid' }
   | { type: 'ok'; state: GameState }
+  | { type: 'pending-checkout'; pending: PendingCheckout }
   | { type: 'leg-won'; state: GameState; winner: 0 | 1; checkoutScore: number; setWon: boolean; matchWon: boolean }
 
 export function processEnterScore(state: GameState): ScoreOutcome {
@@ -95,25 +96,18 @@ export function processEnterScore(state: GameState): ScoreOutcome {
   const p = state.current
   const { score, remaining } = v
   const pName = p === 0 ? state.config.p1 : state.config.p2
+  const prevDarts = state.dartsThrown[p]
 
   const wasAttempt = state.scores[p] <= 170 &&
     !BOGEY_NUMBERS.has(state.scores[p]) &&
     !!CHECKOUTS[state.scores[p]]
 
-  // Update stats
-  const prevDarts = state.dartsThrown[p]
-  const newDartsThrown = tuple2(state.dartsThrown, p, prevDarts + 3)
   const newTotalScored = tuple2(state.totalScored, p, state.totalScored[p] + score)
   const newScores = tuple2(state.scores, p, remaining)
 
+  // Stat updates independent of dart count
   const st = { ...state.allStats[pName] }
-  st.darts += 3
   st.scored += score
-  if (prevDarts < 9) {
-    const dartsToCount = Math.min(3, 9 - prevDarts)
-    st.first9scored += Math.round(score * dartsToCount / 3)
-    st.first9darts += dartsToCount
-  }
   if (score >= 180) st.ton80++
   else if (score >= 140) st.ton40++
   else if (score >= 100) st.tons++
@@ -124,7 +118,32 @@ export function processEnterScore(state: GameState): ScoreOutcome {
     [p === 0 ? 'p0' : 'p1']: { score, remain: remaining },
   }
 
-  let newState: GameState = {
+  if (remaining === 0) {
+    // Checkout: defer dart count until user specifies which dart finished
+    const st2 = { ...st }
+    if (wasAttempt) st2.checkouts++
+    st2.legs++
+    const partialState: GameState = {
+      ...state,
+      scores: newScores,
+      totalScored: newTotalScored,
+      currentRound: newCurrentRound,
+      allStats: { ...state.allStats, [pName]: st2 },
+      inputStr: '',
+    }
+    return { type: 'pending-checkout', pending: { partialState, winner: p, checkoutScore: score, prevDartsThrown: prevDarts } }
+  }
+
+  // Normal turn: apply 3-dart count immediately
+  st.darts += 3
+  if (prevDarts < 9) {
+    const dartsToCount = Math.min(3, 9 - prevDarts)
+    st.first9scored += Math.round(score * dartsToCount / 3)
+    st.first9darts += dartsToCount
+  }
+
+  const newDartsThrown = tuple2(state.dartsThrown, p, prevDarts + 3)
+  const newState: GameState = {
     ...state,
     scores: newScores,
     dartsThrown: newDartsThrown,
@@ -134,17 +153,35 @@ export function processEnterScore(state: GameState): ScoreOutcome {
     inputStr: '',
   }
 
-  if (remaining === 0) {
-    // Checkout!
-    const st2 = { ...newState.allStats[pName] }
-    if (wasAttempt) st2.checkouts++
-    st2.legs++
-    newState = { ...newState, allStats: { ...newState.allStats, [pName]: st2 } }
+  return { type: 'ok', state: processFinishTurn(newState, p) }
+}
 
-    return processFinishLeg(newState, p, score)
+/** Called after the player selects which dart finished the leg (1, 2, or 3). */
+export function processCheckout(
+  pending: PendingCheckout,
+  darts: 1 | 2 | 3,
+): { type: 'leg-won'; state: GameState; winner: 0 | 1; checkoutScore: number; setWon: boolean; matchWon: boolean } {
+  const { partialState, winner: p, checkoutScore, prevDartsThrown } = pending
+  const pName = p === 0 ? partialState.config.p1 : partialState.config.p2
+
+  const st = { ...partialState.allStats[pName] }
+  st.darts += darts
+  if (prevDartsThrown < 9) {
+    const dartsToCount = Math.min(darts, 9 - prevDartsThrown)
+    if (dartsToCount > 0) {
+      st.first9scored += Math.round(checkoutScore * dartsToCount / darts)
+      st.first9darts += dartsToCount
+    }
   }
 
-  return { type: 'ok', state: processFinishTurn(newState, p) }
+  const newDartsThrown = tuple2(partialState.dartsThrown, p, prevDartsThrown + darts)
+  const finalState: GameState = {
+    ...partialState,
+    dartsThrown: newDartsThrown,
+    allStats: { ...partialState.allStats, [pName]: st },
+  }
+
+  return processFinishLeg(finalState, p, checkoutScore)
 }
 
 function processFinishTurn(state: GameState, p: 0 | 1): GameState {
@@ -230,7 +267,7 @@ export function resetLeg(state: GameState): GameState {
     totalScored: [0, 0],
     inputStr: '',
     inputMode: 'score',
-    current: state.current === 0 ? 1 : 0, // alternate starter
+    current: state.current === 0 ? 1 : 0,
     allStats: newAllStats,
   }
 }
@@ -238,20 +275,19 @@ export function resetLeg(state: GameState): GameState {
 // ── Undo ──────────────────────────────────────────────────────────────────────
 
 export function undoLastTurn(state: GameState): GameState {
-  // Case 1: P1 has gone, P2 hasn't yet
-  if (state.currentRound.p0 !== null && state.currentRound.p1 === null && state.current === 1) {
-    const p0data = state.currentRound.p0
-    const score = p0data.score ?? 0
+  // Case 1: It's P2's turn — P1 just went, undo P1's throw
+  if (state.current === 1 && state.currentRound.p0 !== null) {
+    const d = state.currentRound.p0
+    const s = d.score ?? 0
     const pName = state.config.p1
     const st = { ...state.allStats[pName] }
     st.darts -= 3
-    st.scored -= score
-
+    st.scored -= s
     return {
       ...state,
-      scores: tuple2(state.scores, 0, p0data.remain + score),
+      scores: tuple2(state.scores, 0, d.remain + s),
       dartsThrown: tuple2(state.dartsThrown, 0, state.dartsThrown[0] - 3),
-      totalScored: tuple2(state.totalScored, 0, state.totalScored[0] - score),
+      totalScored: tuple2(state.totalScored, 0, state.totalScored[0] - s),
       allStats: { ...state.allStats, [pName]: st },
       currentRound: { p0: null, p1: null },
       current: 0,
@@ -259,49 +295,31 @@ export function undoLastTurn(state: GameState): GameState {
     }
   }
 
-  // Case 2: Undo last full round
+  // Case 2: It's P1's turn — the last completed round's P2 throw is undone,
+  // P1's entry is restored to currentRound so P2 goes again
   if (state.rounds.length === 0) return state
 
   const newRounds = [...state.rounds]
   const last = newRounds.pop()!
 
-  let newScores = [...state.scores] as [number, number]
-  let newDartsThrown = [...state.dartsThrown] as [number, number]
-  let newTotalScored = [...state.totalScored] as [number, number]
-  const newAllStats = { ...state.allStats }
+  if (!last.p1) return state  // nothing to undo for P2
 
-  if (last.p1) {
-    const d = last.p1
-    const s = d.score ?? 0
-    newScores[1] = d.remain + s
-    newDartsThrown[1] -= 3
-    newTotalScored[1] -= s
-    const st = { ...newAllStats[state.config.p2] }
-    st.darts -= 3
-    st.scored -= s
-    newAllStats[state.config.p2] = st
-  }
-  if (last.p0) {
-    const d = last.p0
-    const s = d.score ?? 0
-    newScores[0] = d.remain + s
-    newDartsThrown[0] -= 3
-    newTotalScored[0] -= s
-    const st = { ...newAllStats[state.config.p1] }
-    st.darts -= 3
-    st.scored -= s
-    newAllStats[state.config.p1] = st
-  }
+  const d = last.p1
+  const s = d.score ?? 0
+  const pName = state.config.p2
+  const st = { ...state.allStats[pName] }
+  st.darts -= 3
+  st.scored -= s
 
   return {
     ...state,
-    scores: newScores,
-    dartsThrown: newDartsThrown,
-    totalScored: newTotalScored,
-    allStats: newAllStats,
+    scores: tuple2(state.scores, 1, d.remain + s),
+    dartsThrown: tuple2(state.dartsThrown, 1, state.dartsThrown[1] - 3),
+    totalScored: tuple2(state.totalScored, 1, state.totalScored[1] - s),
+    allStats: { ...state.allStats, [pName]: st },
     rounds: newRounds,
-    currentRound: { p0: null, p1: null },
-    current: 0,
+    currentRound: { p0: last.p0, p1: null },  // P1's entry back in play, P2 needs to re-enter
+    current: 1,
     inputStr: '',
   }
 }

@@ -10,7 +10,7 @@ export function Numpad() {
   const enter = `${btn} bg-ink text-bg text-[0.85rem] tracking-widest active:bg-ink/80`
 
   return (
-    <div className="grid grid-cols-3 gap-px bg-rule border-t border-rule md:hidden">
+    <div className="grid grid-cols-3 gap-px bg-rule border-t border-rule">
       {['1','2','3','4','5','6','7','8','9'].map(d => (
         <button key={d} className={btn} onClick={() => appendDigit(d)}>{d}</button>
       ))}
