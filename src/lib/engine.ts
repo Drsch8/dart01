@@ -185,10 +185,10 @@ export function processCheckout(
 }
 
 function processFinishTurn(state: GameState, p: 0 | 1): GameState {
-  if (p === 0) {
+  if (p === 0 && !state.config.training) {
     return { ...state, current: 1 }
   }
-  // P2 just went — log the round
+  // P2 just went (or training mode) — log the round
   const newRounds = [...state.rounds, { ...state.currentRound }]
   return {
     ...state,
@@ -267,7 +267,7 @@ export function resetLeg(state: GameState): GameState {
     totalScored: [0, 0],
     inputStr: '',
     inputMode: 'score',
-    current: state.current === 0 ? 1 : 0,
+    current: (!state.config.training && state.current === 0) ? 1 : 0,
     allStats: newAllStats,
   }
 }
@@ -275,6 +275,31 @@ export function resetLeg(state: GameState): GameState {
 // ── Undo ──────────────────────────────────────────────────────────────────────
 
 export function undoLastTurn(state: GameState): GameState {
+  // Training mode: undo last completed round's p0 entry
+  if (state.config.training) {
+    if (state.rounds.length === 0) return state
+    const newRounds = [...state.rounds]
+    const last = newRounds.pop()!
+    if (!last.p0) return state
+    const d = last.p0
+    const s = d.score ?? 0
+    const pName = state.config.p1
+    const st = { ...state.allStats[pName] }
+    st.darts -= 3
+    st.scored -= s
+    return {
+      ...state,
+      scores: tuple2(state.scores, 0, d.remain + s),
+      dartsThrown: tuple2(state.dartsThrown, 0, state.dartsThrown[0] - 3),
+      totalScored: tuple2(state.totalScored, 0, state.totalScored[0] - s),
+      allStats: { ...state.allStats, [pName]: st },
+      rounds: newRounds,
+      currentRound: { p0: null, p1: null },
+      current: 0,
+      inputStr: '',
+    }
+  }
+
   // Case 1: It's P2's turn — P1 just went, undo P1's throw
   if (state.current === 1 && state.currentRound.p0 !== null) {
     const d = state.currentRound.p0

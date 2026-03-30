@@ -90,11 +90,12 @@ function PlayerBoard({ idx }: { idx: 0 | 1 }) {
 }
 
 export function Scoreboard() {
+  const training = useGameStore(s => s.config.training)
   return (
     <div className="shrink-0 border-b border-rule">
-      <div className="grid grid-cols-2">
+      <div className={`grid ${training ? 'grid-cols-1' : 'grid-cols-2'}`}>
         <PlayerBoard idx={0} />
-        <PlayerBoard idx={1} />
+        {!training && <PlayerBoard idx={1} />}
       </div>
     </div>
   )

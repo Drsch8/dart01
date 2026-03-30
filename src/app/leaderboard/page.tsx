@@ -76,7 +76,7 @@ export default async function LeaderboardPage() {
           href="/"
           className="border border-rule px-3 py-1.5 text-xs text-ink-light font-mono hover:border-ink hover:text-ink transition-colors"
         >
-          ← Play
+          ← Back
         </Link>
       </div>
 

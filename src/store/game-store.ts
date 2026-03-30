@@ -17,6 +17,7 @@ import { REM_SENTINEL, FINISH_SENTINEL } from '@/lib/constants'
 interface GameStore extends GameState {
   screen: Screen
   pendingCheckout: PendingCheckout | null
+  matchFinished: boolean
 
   startGame: (config: GameConfig) => void
   appendDigit: (digit: string) => void
@@ -45,12 +46,13 @@ export const useGameStore = create<GameStore>((set, get) => ({
   // ── Initial state ──
   screen: 'setup',
   pendingCheckout: null,
+  matchFinished: false,
   ...INITIAL_GAME,
 
   // ── Actions ──
 
   startGame: (config) => {
-    set({ screen: 'game', pendingCheckout: null, ...createInitialGameState(config) })
+    set({ screen: 'game', pendingCheckout: null, matchFinished: false, ...createInitialGameState(config) })
   },
 
   appendDigit: (digit) => {
@@ -79,30 +81,27 @@ export const useGameStore = create<GameStore>((set, get) => ({
   quickScore: (value) => {
     if (value === REM_SENTINEL) {
       const state = gs(get())
-      if (!state.inputStr) {
-        get().toggleMode()
-        return
-      }
-      const originalMode = state.inputMode
-      set(s => ({ ...s, inputMode: 'remaining' as const }))
-      get().enterScore()
-      set(s => ({ ...s, inputMode: originalMode }))
+      if (!state.inputStr) return
+      const outcome = processEnterScore({ ...state, inputMode: 'remaining' })
+      if (outcome.type === 'invalid') return
+      if (outcome.type === 'pending-checkout') { set({ pendingCheckout: outcome.pending }); return }
+      set({ ...outcome.state })
       return
     }
     if (value === FINISH_SENTINEL) {
       const state = gs(get())
-      // Enter remaining score in score mode → remaining becomes 0
       const remaining = state.scores[state.current]
-      const originalMode = state.inputMode
-      set(s => ({ ...s, inputStr: String(remaining), inputMode: 'score' as const }))
-      setTimeout(() => {
-        get().enterScore()
-        set(s => ({ ...s, inputMode: originalMode }))
-      }, 60)
+      const outcome = processEnterScore({ ...state, inputStr: String(remaining), inputMode: 'score' })
+      if (outcome.type === 'invalid') return
+      if (outcome.type === 'pending-checkout') { set({ pendingCheckout: outcome.pending }); return }
+      set({ ...outcome.state })
       return
     }
-    set(s => ({ ...s, inputStr: String(value) }))
-    setTimeout(() => get().enterScore(), 60)
+    // Regular preset score: process directly without flashing inputStr
+    const outcome = processEnterScore({ ...gs(get()), inputStr: String(value), inputMode: 'score' })
+    if (outcome.type === 'invalid') return
+    if (outcome.type === 'pending-checkout') { set({ pendingCheckout: outcome.pending }); return }
+    set({ ...outcome.state })
   },
 
   confirmFinishDart: (darts) => {
@@ -115,14 +114,16 @@ export const useGameStore = create<GameStore>((set, get) => ({
     const { state, winner, matchWon } = outcome
 
     if (matchWon) {
-      const winnerName = winner === 0 ? state.config.p1 : state.config.p2
-      saveMatch({
-        config: state.config,
-        winner: winnerName,
-        sets: state.sets,
-        allStats: state.allStats,
-      })
-      set({ ...state, screen: 'stats' })
+      if (!state.config.training) {
+        const winnerName = winner === 0 ? state.config.p1 : state.config.p2
+        saveMatch({
+          config: state.config,
+          winner: winnerName,
+          sets: state.sets,
+          allStats: state.allStats,
+        })
+      }
+      set({ ...state, screen: 'stats', matchFinished: true })
     } else {
       // Auto-advance to next leg without any overlay
       set({ ...resetLeg(state) })

@@ -7,6 +7,8 @@ export function StatsScreen() {
   const allStats = useGameStore(s => s.allStats)
   const history = useGameStore(s => s.history)
   const setScreen = useGameStore(s => s.setScreen)
+  const startGame = useGameStore(s => s.startGame)
+  const matchFinished = useGameStore(s => s.matchFinished)
 
   const statLabel = 'text-2xs tracking-[0.1em] uppercase text-ink-light'
   const statValue = 'font-display font-bold text-2xl leading-tight'
@@ -15,16 +17,34 @@ export function StatsScreen() {
     <div className="min-h-screen bg-bg">
       <div className="flex items-center justify-between px-4 py-3 border-b border-rule bg-paper sticky top-0">
         <span className="font-display font-bold text-lg">Statistics</span>
-        <button
-          onClick={() => setScreen('game')}
-          className="border border-rule px-3 py-1.5 text-xs text-ink-light font-mono hover:border-ink hover:text-ink transition-colors"
-        >
-          ← Back
-        </button>
+        <div className="flex gap-2">
+          {!matchFinished && (
+            <button
+              onClick={() => setScreen('game')}
+              className="border border-rule px-3 py-1.5 text-xs text-ink-light font-mono hover:border-ink hover:text-ink transition-colors"
+            >
+              ← Back
+            </button>
+          )}
+          {matchFinished && (
+            <button
+              onClick={() => startGame(config)}
+              className="border border-rule px-3 py-1.5 text-xs text-ink-light font-mono hover:border-ink hover:text-ink transition-colors"
+            >
+              Rematch
+            </button>
+          )}
+          <button
+            onClick={() => setScreen('setup')}
+            className="border border-rule px-3 py-1.5 text-xs text-ink-light font-mono hover:border-ink hover:text-ink transition-colors"
+          >
+            New game
+          </button>
+        </div>
       </div>
 
       <div className="p-4 flex flex-col gap-4 max-w-2xl mx-auto">
-        {[config.p1, config.p2].map(name => {
+        {(config.training ? [config.p1] : [config.p1, config.p2]).map(name => {
           const st = allStats[name]
           if (!st) return null
           return (
@@ -57,6 +77,7 @@ export function StatsScreen() {
             </div>
           </div>
         )}
+
       </div>
     </div>
   )

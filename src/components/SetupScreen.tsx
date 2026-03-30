@@ -9,6 +9,7 @@ import { START_SCORES, LEGS_OPTIONS, SETS_OPTIONS } from '@/lib/constants'
 
 export function SetupScreen() {
   const startGame = useGameStore(s => s.startGame)
+  const [training, setTraining] = useState(false)
   const [p1, setP1] = useState('Player 1')
   const [p2, setP2] = useState('Player 2')
   const [startScore, setStartScore] = useState<StartScore>(501)
@@ -24,6 +25,7 @@ export function SetupScreen() {
       outRule,
       legsToWin,
       setsToWin,
+      training,
     }
     startGame(config)
   }
@@ -41,8 +43,22 @@ export function SetupScreen() {
 
         {/* ── Config form ── */}
         <div className="bg-paper border border-rule w-full md:w-[380px] md:flex-shrink-0 p-8 flex flex-col gap-6">
+          <div>
+            <label className={fieldLabel}>Mode</label>
+            <PillGroup
+              options={[
+                { label: 'Match', value: false },
+                { label: 'Training', value: true },
+              ]}
+              value={training}
+              onChange={setTraining}
+            />
+          </div>
+
           <PlayerNameInput label="Player 1" value={p1} onChange={setP1} inputClassName={input} />
-          <PlayerNameInput label="Player 2" value={p2} onChange={setP2} inputClassName={input} onEnter={handleStart} />
+          {!training && (
+            <PlayerNameInput label="Player 2" value={p2} onChange={setP2} inputClassName={input} onEnter={handleStart} />
+          )}
 
           <div>
             <label className={fieldLabel}>Starting Score</label>

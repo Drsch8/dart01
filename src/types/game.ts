@@ -10,6 +10,7 @@ export interface GameConfig {
   outRule: OutRule
   legsToWin: number
   setsToWin: number
+  training?: boolean
 }
 
 export interface PlayerStats {

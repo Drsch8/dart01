@@ -5,7 +5,6 @@ import { isFinishable } from '@/lib/checkouts'
 
 export function QuickScores() {
   const quickScore = useGameStore(s => s.quickScore)
-  const inputMode = useGameStore(s => s.inputMode)
   const current = useGameStore(s => s.current)
   const currentScore = useGameStore(s => s.scores[current])
 
@@ -14,13 +13,10 @@ export function QuickScores() {
   return (
     <div className="grid grid-cols-6 md:grid-cols-12 gap-px bg-rule border-t border-rule shrink-0">
       {QUICK_SCORE_VALUES.map((val, i) => {
-        const isRem = val === REM_SENTINEL
         const isFinish = val === FINISH_SENTINEL
-        const isRemActive = isRem && inputMode === 'remaining'
 
         let cls = 'bg-paper text-ink hover:bg-bg active:bg-ink-faint'
-        if (isRemActive) cls = 'bg-ink text-bg'
-        else if (isFinish && canFinish) cls = 'bg-finish-bg text-finish hover:bg-finish/10'
+        if (isFinish && canFinish) cls = 'bg-finish-bg text-finish hover:bg-finish/10'
         else if (isFinish) cls = 'bg-paper text-ink-faint'
 
         return (
@@ -29,7 +25,7 @@ export function QuickScores() {
             onClick={() => quickScore(val)}
             className={`py-3 text-center font-mono text-sm select-none cursor-pointer border-none outline-none touch-none transition-colors ${cls}`}
           >
-            <span className={`hidden md:block text-xs leading-none mb-0.5 ${isRemActive ? 'text-bg/60' : 'text-ink-light'}`}>
+            <span className="hidden md:block text-xs leading-none mb-0.5 text-ink-light">
               {FKEY_LABELS[i]}
             </span>
             {QUICK_SCORE_LABELS[i]}

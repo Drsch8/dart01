@@ -23,6 +23,7 @@ export function LiveList() {
   const inputMode = useGameStore(s => s.inputMode)
   const scores = useGameStore(s => s.scores)
   const outRule = useGameStore(s => s.config.outRule)
+  const training = useGameStore(s => s.config.training)
   const bottomRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -62,26 +63,26 @@ export function LiveList() {
       <div className="px-5 py-3">
 
         {/* Column headers */}
-        <div className="grid grid-cols-[3rem_1fr_1fr] gap-4 text-xs tracking-[0.12em] uppercase text-ink-faint border-b border-rule pb-2 font-mono sticky top-0 bg-paper">
+        <div className={`grid ${training ? 'grid-cols-[3rem_1fr]' : 'grid-cols-[3rem_1fr_1fr]'} gap-4 text-xs tracking-[0.12em] uppercase text-ink-faint border-b border-rule pb-2 font-mono sticky top-0 bg-paper`}>
           <span>#</span>
           <span />
-          <span />
+          {!training && <span />}
         </div>
 
         {/* Completed rounds */}
         {rounds.map((round, i) => (
-          <div key={i} className="grid grid-cols-[3rem_1fr_1fr] gap-4 text-base border-b border-rule/30 py-2 items-center font-mono">
+          <div key={i} className={`grid ${training ? 'grid-cols-[3rem_1fr]' : 'grid-cols-[3rem_1fr_1fr]'} gap-4 text-base border-b border-rule/30 py-2 items-center font-mono`}>
             <span className="text-ink-faint text-sm">{i + 1}</span>
             <span><CompletedCell entry={round.p0} /></span>
-            <span className="flex justify-end"><CompletedCell entry={round.p1} right /></span>
+            {!training && <span className="flex justify-end"><CompletedCell entry={round.p1} right /></span>}
           </div>
         ))}
 
         {/* Live input row */}
-        <div className="grid grid-cols-[3rem_1fr_1fr] gap-4 py-3 items-center font-mono border-t-2 border-ink mt-1">
+        <div className={`grid ${training ? 'grid-cols-[3rem_1fr]' : 'grid-cols-[3rem_1fr_1fr]'} gap-4 py-3 items-center font-mono border-t-2 border-ink mt-1`}>
           <span className="text-ink-faint text-sm">{liveRound}</span>
           <span>{renderLiveCell(0)}</span>
-          <span className="flex justify-end">{renderLiveCell(1, true)}</span>
+          {!training && <span className="flex justify-end">{renderLiveCell(1, true)}</span>}
         </div>
 
         <div ref={bottomRef} />

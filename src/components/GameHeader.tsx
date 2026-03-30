@@ -4,6 +4,20 @@ import Link from 'next/link'
 import { useGameStore } from '@/store/game-store'
 import { useSpeech } from '@/hooks/use-speech'
 
+function MicIcon({ crossed }: { crossed?: boolean }) {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      {/* mic body */}
+      <rect x="5.5" y="1" width="5" height="8" rx="2.5" />
+      {/* stand + base */}
+      <path d="M3 7.5a5 5 0 0 0 10 0" />
+      <line x1="8" y1="12.5" x2="8" y2="15" />
+      <line x1="5.5" y1="15" x2="10.5" y2="15" />
+      {crossed && <line x1="2" y1="2" x2="14" y2="14" strokeWidth="1.5" />}
+    </svg>
+  )
+}
+
 export function GameHeader() {
   const setScreen = useGameStore(s => s.setScreen)
   const undo = useGameStore(s => s.undo)
@@ -36,7 +50,7 @@ export function GameHeader() {
           : 'border-finish text-finish'
       }`}
     >
-      {muted ? '🔇' : '🎙'}
+      <MicIcon crossed={muted} />
     </button>
   ) : null
 
@@ -53,9 +67,10 @@ export function GameHeader() {
         <button className={hdrBtn} onClick={newGame}>New</button>
       </div>
 
-      {/* Mobile: voice + burger */}
+      {/* Mobile: voice + undo + burger */}
       <div className="flex md:hidden gap-2 items-center" ref={menuRef}>
         {voiceBtn}
+        <button className={hdrBtn} onClick={undo}>Undo</button>
         <button
           onClick={() => setMenuOpen(o => !o)}
           className={hdrBtn}
@@ -78,12 +93,6 @@ export function GameHeader() {
               onClick={() => { setScreen('stats'); setMenuOpen(false) }}
             >
               Stats
-            </button>
-            <button
-              className="px-5 py-3 text-sm font-mono text-ink-light hover:bg-bg hover:text-ink transition-colors text-left border-t border-rule"
-              onClick={() => { undo(); setMenuOpen(false) }}
-            >
-              Undo
             </button>
             <button
               className="px-5 py-3 text-sm font-mono text-ink-light hover:bg-bg hover:text-ink transition-colors text-left"
