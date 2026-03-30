@@ -12,7 +12,7 @@ import { Numpad } from './Numpad'
 import { FinishDartPicker } from './FinishDartPicker'
 
 /** Mobile-only: compact display of what's currently being typed */
-function MobileInputDisplay() {
+function MobileInputDisplay({ onShowScores }: { onShowScores: () => void }) {
   const inputStr = useGameStore(s => s.inputStr)
   const inputMode = useGameStore(s => s.inputMode)
   const current = useGameStore(s => s.current)
@@ -29,14 +29,20 @@ function MobileInputDisplay() {
     : ''
 
   return (
-    <div className="px-5 py-3 border-b border-rule bg-paper flex items-baseline gap-3">
-      <span className={`font-mono font-bold text-3xl ${isInvalid ? 'text-bust' : 'text-ink'}`}>
+    <div className="px-5 py-2 border-b border-rule bg-paper flex items-center gap-3">
+      <span className={`font-mono font-bold text-3xl flex-1 ${isInvalid ? 'text-bust' : 'text-ink'}`}>
         {inputStr}
         <span className="animate-pulse font-light text-ink-light">|</span>
+        {hint && (
+          <span className="text-ink-light text-lg font-mono ml-3">{hint}</span>
+        )}
       </span>
-      {hint && (
-        <span className="text-ink-light text-lg font-mono">{hint}</span>
-      )}
+      <button
+        onClick={onShowScores}
+        className="shrink-0 border border-rule px-3 py-1.5 text-xs font-mono text-ink-light hover:border-ink hover:text-ink transition-colors"
+      >
+        Scores
+      </button>
     </div>
   )
 }
@@ -64,16 +70,7 @@ export function GameScreen() {
       <div className="md:hidden flex-1 min-h-0 flex flex-col overflow-hidden bg-paper">
         <Scoreboard />
         <CheckoutHint />
-        <MobileInputDisplay />
-
-        {/* Scores toggle button */}
-        <button
-          onClick={() => setShowScores(true)}
-          className="mx-5 my-2 py-2 border border-rule text-sm font-mono text-ink-light hover:border-ink hover:text-ink transition-colors shrink-0"
-        >
-          Scores · Round {rounds.length + 1}
-        </button>
-
+        <MobileInputDisplay onShowScores={() => setShowScores(true)} />
         <QuickScores />
         <Numpad />
       </div>

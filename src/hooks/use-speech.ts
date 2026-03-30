@@ -24,7 +24,6 @@ function parseScore(transcript: string): number | null {
     'one hundred': 100, 'a hundred': 100,
     'one oh one': 101, 'one and one': 101,
     'one twenty': 120, 'one hundred twenty': 120, 'one hundred and twenty': 120,
-    'one hundred and twenty-six': 126, 'one twenty-six': 126,
     'one forty': 140, 'one hundred forty': 140, 'one hundred and forty': 140,
     'one sixty': 160, 'one hundred sixty': 160, 'one hundred and sixty': 160,
     'one eighty': 180, 'one hundred eighty': 180, 'one hundred and eighty': 180,
@@ -64,9 +63,10 @@ interface SpeechRec extends EventTarget {
 }
 
 export function useSpeech() {
-  const [listening, setListening] = useState(false)
   const [supported, setSupported] = useState(false)
+  const [muted, setMuted] = useState(false)
   const recRef = useRef<SpeechRec | null>(null)
+  const mutedRef = useRef(false)
   const quickScoreRef = useRef(useGameStore.getState().quickScore)
 
   useEffect(() => {
@@ -82,37 +82,45 @@ export function useSpeech() {
 
     const rec = new SR()
     rec.lang = 'en-US'
-    rec.continuous = false
+    rec.continuous = false  // more reliable cross-browser; we auto-restart on end
     rec.interimResults = false
+
+    const tryStart = () => {
+      if (mutedRef.current) return
+      try { rec.start() } catch { /* already running */ }
+    }
 
     rec.onresult = (e) => {
       const transcript = e.results[0][0].transcript
       const score = parseScore(transcript)
       if (score !== null) quickScoreRef.current(score)
-      setListening(false)
     }
-    rec.onend = () => setListening(false)
-    rec.onerror = () => setListening(false)
+    rec.onend = () => {
+      // auto-restart unless muted
+      setTimeout(tryStart, 150)
+    }
+    rec.onerror = () => {
+      setTimeout(tryStart, 500)
+    }
 
     recRef.current = rec
+    tryStart()
+
     return () => { rec.abort() }
   }, [])
 
-  const toggle = useCallback(() => {
-    const rec = recRef.current
-    if (!rec) return
-    if (listening) {
-      rec.stop()
-      setListening(false)
-    } else {
-      try {
-        rec.start()
-        setListening(true)
-      } catch {
-        // already started — ignore
+  const toggleMute = useCallback(() => {
+    setMuted(prev => {
+      const next = !prev
+      mutedRef.current = next
+      if (next) {
+        recRef.current?.abort()
+      } else {
+        try { recRef.current?.start() } catch { /* ignore */ }
       }
-    }
-  }, [listening])
+      return next
+    })
+  }, [])
 
-  return { listening, supported, toggle }
+  return { supported, muted, toggleMute }
 }
