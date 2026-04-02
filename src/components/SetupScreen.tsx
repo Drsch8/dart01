@@ -124,8 +124,8 @@ export function SetupScreen() {
   const fieldLabel = 'block text-2xs tracking-[0.12em] uppercase text-ink-light mb-2'
 
   return (
-    <div className="min-h-screen bg-bg p-6 md:p-12">
-      <div className="flex items-end justify-between mb-8 md:mb-12">
+    <div className="min-h-screen bg-bg p-4 md:p-12">
+      <div className="flex items-end justify-between mb-4 md:mb-12">
         <h1 className="font-display font-black text-[clamp(3rem,8vw,5rem)] leading-[0.9] tracking-tight">
           Darts
         </h1>
@@ -142,7 +142,7 @@ export function SetupScreen() {
       <div className="flex flex-col md:flex-row gap-8 md:gap-12 items-start">
 
         {/* ── Config form ── */}
-        <div className="bg-paper border border-rule w-full md:w-[380px] md:flex-shrink-0 p-8 flex flex-col gap-6">
+        <div className="bg-paper border border-rule w-full md:w-[380px] md:flex-shrink-0 p-4 md:p-8 flex flex-col gap-3 md:gap-6">
           <div>
             <label className={fieldLabel}>Mode</label>
             <PillGroup

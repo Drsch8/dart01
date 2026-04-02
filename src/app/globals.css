@@ -32,3 +32,20 @@ body {
   overscroll-behavior: none;
 }
 
+@keyframes winner-bounce-in {
+  0%   { opacity: 0; transform: scale(0.6); }
+  65%  { transform: scale(1.06); }
+  82%  { transform: scale(0.96); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+@keyframes particle-rise {
+  0%   { opacity: 1; transform: translateY(0px) rotate(0deg) scale(1); }
+  100% { opacity: 0; transform: translateY(-180px) rotate(480deg) scale(0.4); }
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+

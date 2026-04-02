@@ -24,7 +24,18 @@ export function GameHeader() {
   const newGame = useGameStore(s => s.newGame)
   const { supported, muted, toggleMute } = useSpeech()
   const [menuOpen, setMenuOpen] = useState(false)
+  const [confirmNew, setConfirmNew] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
+
+  function handleNewGame() {
+    setMenuOpen(false)
+    setConfirmNew(true)
+  }
+
+  function confirmYes() {
+    setConfirmNew(false)
+    newGame()
+  }
 
   // Close on outside click
   useEffect(() => {
@@ -56,7 +67,34 @@ export function GameHeader() {
 
   return (
     <div className="flex items-center justify-between px-5 py-3 border-b border-rule bg-paper sticky top-0 z-20">
-      <button onClick={newGame} className="font-display font-bold text-2xl tracking-tight bg-transparent border-none cursor-pointer">Darts</button>
+      <button onClick={handleNewGame} className="font-display font-bold text-2xl tracking-tight bg-transparent border-none cursor-pointer">Darts</button>
+
+      {confirmNew && (
+        <div className="fixed inset-0 bg-ink/85 z-50 flex items-center justify-center" onClick={() => setConfirmNew(false)}>
+          <div className="bg-paper border-2 border-ink p-8 text-center max-w-xs w-[90%] flex flex-col gap-6 relative" onClick={e => e.stopPropagation()}>
+            <button
+              onClick={() => setConfirmNew(false)}
+              className="absolute top-3 right-3 text-ink-faint hover:text-ink font-mono text-lg leading-none"
+              aria-label="Cancel"
+            >✕</button>
+            <p className="font-display font-black text-3xl">New game?</p>
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                onClick={() => setConfirmNew(false)}
+                className="py-5 border-2 border-rule hover:border-ink hover:bg-bg font-mono text-2xl transition-colors cursor-pointer"
+              >
+                No
+              </button>
+              <button
+                onClick={confirmYes}
+                className="py-5 border-2 border-ink bg-ink text-bg hover:opacity-80 font-mono text-2xl transition-opacity cursor-pointer"
+              >
+                Yes
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Desktop: all buttons inline */}
       <div className="hidden md:flex gap-2">
@@ -64,7 +102,7 @@ export function GameHeader() {
         <button className={hdrBtn} onClick={() => setScreen('stats')}>Stats</button>
         {voiceBtn}
         <button className={hdrBtn} onClick={undo}>Undo</button>
-        <button className={hdrBtn} onClick={newGame}>New</button>
+        <button className={hdrBtn} onClick={handleNewGame}>New</button>
       </div>
 
       {/* Mobile: voice + undo + burger */}
@@ -96,7 +134,7 @@ export function GameHeader() {
             </button>
             <button
               className="px-5 py-3 text-sm font-mono text-ink-light hover:bg-bg hover:text-ink transition-colors text-left"
-              onClick={() => { newGame(); setMenuOpen(false) }}
+              onClick={handleNewGame}
             >
               New game
             </button>

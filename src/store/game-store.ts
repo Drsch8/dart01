@@ -18,6 +18,7 @@ interface GameStore extends GameState {
   screen: Screen
   pendingCheckout: PendingCheckout | null
   matchFinished: boolean
+  winnerName: string | null
 
   startGame: (config: GameConfig) => void
   appendDigit: (digit: string) => void
@@ -26,6 +27,7 @@ interface GameStore extends GameState {
   enterScore: () => void
   quickScore: (value: number) => void
   confirmFinishDart: (darts: 1 | 2 | 3) => void
+  dismissWinner: () => void
   undo: () => void
   newGame: () => void
   setScreen: (screen: Screen) => void
@@ -47,6 +49,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
   screen: 'setup',
   pendingCheckout: null,
   matchFinished: false,
+  winnerName: null,
   ...INITIAL_GAME,
 
   // ── Actions ──
@@ -114,8 +117,8 @@ export const useGameStore = create<GameStore>((set, get) => ({
     const { state, winner, matchWon } = outcome
 
     if (matchWon) {
+      const winnerName = winner === 0 ? state.config.p1 : state.config.p2
       if (!state.config.training) {
-        const winnerName = winner === 0 ? state.config.p1 : state.config.p2
         saveMatch({
           config: state.config,
           winner: winnerName,
@@ -123,11 +126,15 @@ export const useGameStore = create<GameStore>((set, get) => ({
           allStats: state.allStats,
         })
       }
-      set({ ...state, screen: 'stats', matchFinished: true })
+      set({ ...state, matchFinished: true, winnerName: state.config.training ? null : winnerName, screen: state.config.training ? 'stats' : 'game' })
     } else {
       // Auto-advance to next leg without any overlay
       set({ ...resetLeg(state) })
     }
+  },
+
+  dismissWinner: () => {
+    set({ winnerName: null, screen: 'stats' })
   },
 
   undo: () => {

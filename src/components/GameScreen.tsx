@@ -8,11 +8,13 @@ import { LiveList } from './LiveList'
 import { QuickScores } from './QuickScores'
 import { Numpad } from './Numpad'
 import { FinishDartPicker } from './FinishDartPicker'
+import { WinnerPopup } from './WinnerPopup'
 
 export function GameScreen() {
   useKeyboard()
 
   useEffect(() => {
+    window.scrollTo(0, 0)
     document.documentElement.style.overflow = 'hidden'
     document.body.style.overflow = 'hidden'
     return () => {
@@ -44,6 +46,7 @@ export function GameScreen() {
       </div>
 
       <FinishDartPicker />
+      <WinnerPopup />
     </div>
   )
 }
