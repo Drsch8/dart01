@@ -36,7 +36,9 @@ export function SetupStats() {
             <th className="text-right pb-2 font-normal">W</th>
             <th className="text-right pb-2 font-normal">Avg</th>
             <th className="text-right pb-2 font-normal">Co%</th>
-            <th className="text-right pb-2 font-normal">180s</th>
+            <th className="text-right pb-2 font-normal">180</th>
+            <th className="text-right pb-2 font-normal">140</th>
+            <th className="text-right pb-2 font-normal">100</th>
           </tr>
         </thead>
         <tbody>
@@ -48,6 +50,8 @@ export function SetupStats() {
               <td className="py-1.5 text-right text-ink-light">{p.avg_score ?? '—'}</td>
               <td className="py-1.5 text-right text-ink-light">{p.co_pct != null ? `${p.co_pct}%` : '—'}</td>
               <td className="py-1.5 text-right text-ink-light">{p.total_180s}</td>
+              <td className="py-1.5 text-right text-ink-light">{p.total_140s}</td>
+              <td className="py-1.5 text-right text-ink-light">{p.total_100s}</td>
             </tr>
           ))}
         </tbody>

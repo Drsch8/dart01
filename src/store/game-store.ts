@@ -19,6 +19,7 @@ interface GameStore extends GameState {
   pendingCheckout: PendingCheckout | null
   matchFinished: boolean
   winnerName: string | null
+  snapshotBeforeCheckout: GameState | null
 
   startGame: (config: GameConfig) => void
   appendDigit: (digit: string) => void
@@ -28,6 +29,8 @@ interface GameStore extends GameState {
   quickScore: (value: number) => void
   confirmFinishDart: (darts: 1 | 2 | 3) => void
   dismissWinner: () => void
+  undoWinner: () => void
+  rematch: () => void
   undo: () => void
   newGame: () => void
   setScreen: (screen: Screen) => void
@@ -50,12 +53,13 @@ export const useGameStore = create<GameStore>((set, get) => ({
   pendingCheckout: null,
   matchFinished: false,
   winnerName: null,
+  snapshotBeforeCheckout: null,
   ...INITIAL_GAME,
 
   // ── Actions ──
 
   startGame: (config) => {
-    set({ screen: 'game', pendingCheckout: null, matchFinished: false, ...createInitialGameState(config) })
+    set({ screen: 'game', pendingCheckout: null, matchFinished: false, winnerName: null, snapshotBeforeCheckout: null, ...createInitialGameState(config) })
   },
 
   appendDigit: (digit) => {
@@ -71,13 +75,13 @@ export const useGameStore = create<GameStore>((set, get) => ({
   },
 
   enterScore: () => {
-    const outcome = processEnterScore(gs(get()))
+    const before = gs(get())
+    const outcome = processEnterScore(before)
     if (outcome.type === 'invalid') return
     if (outcome.type === 'pending-checkout') {
-      set({ pendingCheckout: outcome.pending })
+      set({ pendingCheckout: outcome.pending, snapshotBeforeCheckout: before })
       return
     }
-    // type === 'ok'
     set({ ...outcome.state })
   },
 
@@ -87,7 +91,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       if (!state.inputStr) return
       const outcome = processEnterScore({ ...state, inputMode: 'remaining' })
       if (outcome.type === 'invalid') return
-      if (outcome.type === 'pending-checkout') { set({ pendingCheckout: outcome.pending }); return }
+      if (outcome.type === 'pending-checkout') { set({ pendingCheckout: outcome.pending, snapshotBeforeCheckout: state }); return }
       set({ ...outcome.state, inputMode: 'score' })
       return
     }
@@ -96,14 +100,14 @@ export const useGameStore = create<GameStore>((set, get) => ({
       const remaining = state.scores[state.current]
       const outcome = processEnterScore({ ...state, inputStr: String(remaining), inputMode: 'score' })
       if (outcome.type === 'invalid') return
-      if (outcome.type === 'pending-checkout') { set({ pendingCheckout: outcome.pending }); return }
+      if (outcome.type === 'pending-checkout') { set({ pendingCheckout: outcome.pending, snapshotBeforeCheckout: state }); return }
       set({ ...outcome.state })
       return
     }
-    // Regular preset score: process directly without flashing inputStr
-    const outcome = processEnterScore({ ...gs(get()), inputStr: String(value), inputMode: 'score' })
+    const state = gs(get())
+    const outcome = processEnterScore({ ...state, inputStr: String(value), inputMode: 'score' })
     if (outcome.type === 'invalid') return
-    if (outcome.type === 'pending-checkout') { set({ pendingCheckout: outcome.pending }); return }
+    if (outcome.type === 'pending-checkout') { set({ pendingCheckout: outcome.pending, snapshotBeforeCheckout: state }); return }
     set({ ...outcome.state })
   },
 
@@ -135,6 +139,18 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
   dismissWinner: () => {
     set({ winnerName: null, screen: 'stats' })
+  },
+
+  undoWinner: () => {
+    const snap = get().snapshotBeforeCheckout
+    if (snap) {
+      set({ ...snap, winnerName: null, matchFinished: false, pendingCheckout: null, snapshotBeforeCheckout: null, screen: 'game' })
+    }
+  },
+
+  rematch: () => {
+    const config = get().config
+    set({ screen: 'game', pendingCheckout: null, matchFinished: false, winnerName: null, snapshotBeforeCheckout: null, ...createInitialGameState(config) })
   },
 
   undo: () => {

@@ -1,4 +1,5 @@
 'use client'
+import { useState } from 'react'
 import { useGameStore } from '@/store/game-store'
 import { computeAvg, computeFirst9Avg, computeCheckoutPct } from '@/lib/engine'
 
@@ -9,6 +10,7 @@ export function StatsScreen() {
   const setScreen = useGameStore(s => s.setScreen)
   const startGame = useGameStore(s => s.startGame)
   const matchFinished = useGameStore(s => s.matchFinished)
+  const [confirmNew, setConfirmNew] = useState(false)
 
   const statLabel = 'text-2xs tracking-[0.1em] uppercase text-ink-light'
   const statValue = 'font-display font-bold text-2xl leading-tight'
@@ -35,7 +37,7 @@ export function StatsScreen() {
             </button>
           )}
           <button
-            onClick={() => setScreen('setup')}
+            onClick={() => setConfirmNew(true)}
             className="border border-rule px-4 py-2 text-sm text-ink-light font-mono hover:border-ink hover:text-ink transition-colors"
           >
             New game
@@ -79,6 +81,19 @@ export function StatsScreen() {
         )}
 
       </div>
+
+      {confirmNew && (
+        <div className="fixed inset-0 bg-bg/60 backdrop-blur-sm z-50 flex items-center justify-center" onClick={() => setConfirmNew(false)}>
+          <div className="bg-paper border-2 border-ink p-8 text-center max-w-xs w-[90%] flex flex-col gap-6 relative" onClick={e => e.stopPropagation()}>
+            <button onClick={() => setConfirmNew(false)} className="absolute top-3 right-3 text-ink-faint hover:text-ink font-mono text-lg leading-none" aria-label="Cancel">✕</button>
+            <p className="font-display font-black text-3xl">New game?</p>
+            <div className="grid grid-cols-2 gap-3">
+              <button onClick={() => setConfirmNew(false)} className="py-5 border-2 border-rule hover:border-ink hover:bg-bg font-mono text-2xl transition-colors cursor-pointer">No</button>
+              <button onClick={() => { setConfirmNew(false); setScreen('setup') }} className="py-5 border-2 border-ink bg-ink text-bg hover:opacity-80 font-mono text-2xl transition-opacity cursor-pointer">Yes</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

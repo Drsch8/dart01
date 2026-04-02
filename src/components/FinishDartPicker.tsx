@@ -45,13 +45,8 @@ export function FinishDartPicker() {
   if (possible.size === 1) return null  // auto-confirming, don't flash the picker
 
   return (
-    <div className="fixed inset-0 bg-ink/85 z-50 flex items-center justify-center">
+    <div className="fixed inset-0 bg-bg/60 backdrop-blur-sm z-50 flex items-center justify-center">
       <div className="bg-paper border-2 border-ink p-8 text-center max-w-xs w-[90%] flex flex-col gap-6 relative">
-        <button
-          onClick={undo}
-          className="absolute top-3 right-3 text-ink-faint hover:text-ink font-mono text-lg leading-none"
-          aria-label="Cancel"
-        >✕</button>
         <div>
           <p className="text-xs tracking-[0.15em] uppercase text-ink-light font-mono mb-2">
             Checked out {pendingCheckout.checkoutScore}
@@ -79,7 +74,15 @@ export function FinishDartPicker() {
           })}
         </div>
 
-        <p className="text-xs text-ink-light font-mono">Press 1 · 2 · 3  or  Enter for 3rd</p>
+        <div className="flex items-center justify-between">
+          <button
+            onClick={undo}
+            className="font-mono text-xs tracking-[0.1em] uppercase text-ink-faint hover:text-ink transition-colors cursor-pointer bg-transparent border-none"
+          >
+            ← Undo
+          </button>
+          <p className="text-xs text-ink-light font-mono">Press 1 · 2 · 3</p>
+        </div>
       </div>
     </div>
   )

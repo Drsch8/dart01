@@ -11,6 +11,7 @@ interface CareerRow {
   co_pct: number | null
   total_180s: number
   total_140s: number
+  total_100s: number
 }
 
 interface RecentMatch {
@@ -102,6 +103,7 @@ export default async function LeaderboardPage() {
                     <th className={`${th} text-right`}>CO%</th>
                     <th className={`${th} text-right`}>180s</th>
                     <th className={`${th} text-right`}>140+</th>
+                    <th className={`${th} text-right`}>100+</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -118,6 +120,7 @@ export default async function LeaderboardPage() {
                       <td className={`${tdMono} text-right`}>{fmt(row.co_pct)}%</td>
                       <td className={`${tdMono} text-right`}>{row.total_180s}</td>
                       <td className={`${tdMono} text-right`}>{row.total_140s}</td>
+                      <td className={`${tdMono} text-right`}>{row.total_100s}</td>
                     </tr>
                   ))}
                 </tbody>

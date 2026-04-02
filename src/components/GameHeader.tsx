@@ -70,7 +70,7 @@ export function GameHeader() {
       <button onClick={handleNewGame} className="font-display font-bold text-2xl tracking-tight bg-transparent border-none cursor-pointer">Darts</button>
 
       {confirmNew && (
-        <div className="fixed inset-0 bg-ink/85 z-50 flex items-center justify-center" onClick={() => setConfirmNew(false)}>
+        <div className="fixed inset-0 bg-bg/60 backdrop-blur-sm z-50 flex items-center justify-center" onClick={() => setConfirmNew(false)}>
           <div className="bg-paper border-2 border-ink p-8 text-center max-w-xs w-[90%] flex flex-col gap-6 relative" onClick={e => e.stopPropagation()}>
             <button
               onClick={() => setConfirmNew(false)}

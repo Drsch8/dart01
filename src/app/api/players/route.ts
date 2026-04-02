@@ -11,6 +11,7 @@ export interface PlayerStat {
   co_pct: number | null
   total_180s: number
   total_140s: number
+  total_100s: number
 }
 
 export async function GET() {
