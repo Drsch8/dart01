@@ -1,5 +1,6 @@
 'use client'
 import { useState, useEffect } from 'react'
+import Link from 'next/link'
 import { PillGroup } from './PillGroup'
 import { PlayerNameInput } from './PlayerNameInput'
 import { SetupStats } from './SetupStats'
@@ -126,9 +127,17 @@ export function SetupScreen() {
   return (
     <div className="min-h-screen bg-bg p-4 md:p-12">
       <div className="flex items-end justify-between mb-4 md:mb-12">
-        <h1 className="font-display font-black text-[clamp(3rem,8vw,5rem)] leading-[0.9] tracking-tight">
-          Darts
-        </h1>
+        <div className="flex items-end gap-5">
+          <h1 className="font-display font-black text-[clamp(3rem,8vw,5rem)] leading-[0.9] tracking-tight">
+            Darts
+          </h1>
+          <Link
+            href="/cricket"
+            className="font-display font-black text-[clamp(3rem,8vw,5rem)] leading-[0.9] tracking-tight text-ink-faint hover:text-ink transition-colors"
+          >
+            Cricket
+          </Link>
+        </div>
         <button
           onClick={() => setShowHelp(true)}
           className="font-mono text-sm text-ink-light hover:text-ink border border-rule hover:border-ink px-3 py-1.5 transition-colors mb-1"
