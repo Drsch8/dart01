@@ -5,7 +5,7 @@ import { useCricketStore } from '@/store/cricket-store'
 function Marks({ count }: { count: number }) {
   if (count === 0) return null
   const src = count === 1 ? '/1.svg' : count === 2 ? '/2.svg' : '/3.svg'
-  const height = count >= 3 ? 32 : 44
+  const height = count >= 3 ? 44 : 32
   return <img src={src} style={{ height }} className="w-auto select-none" aria-hidden alt="" />
 }
 
@@ -80,8 +80,8 @@ export function CricketGame() {
       </div>
 
       {/* ── Number grid ── */}
-      <div className="flex-1 min-h-0 overflow-y-auto bg-paper md:flex md:justify-center">
-        <div className="w-full md:max-w-2xl md:border-x md:border-rule">
+      <div className="flex-1 min-h-0 bg-paper md:flex md:justify-center">
+        <div className="w-full md:max-w-2xl md:border-x md:border-rule flex flex-col">
           {numbers.map(n => {
             const [p1m, p2m] = marks[n] ?? [0, 0]
             const fullyClosed = p1m >= 3 && p2m >= 3
@@ -93,13 +93,13 @@ export function CricketGame() {
                 onClick={() => addMark(n)}
                 disabled={winner !== null}
                 onTouchEnd={e => (e.currentTarget as HTMLElement).blur()}
-                className={`w-full grid border-b border-rule
+                className={`flex-1 grid border-b border-rule
                   ${winner === null ? 'cursor-pointer' : 'cursor-default'}
                 `}
                 style={{ gridTemplateColumns: '1fr 5rem 1fr' }}
               >
                 {/* P1 marks */}
-                <div className={`flex items-center justify-center px-4 py-4 border-r border-rule
+                <div className={`flex items-center justify-center px-4 border-r border-rule
                   ${active(0) && !fullyClosed ? 'bg-paper' : 'bg-bg'}`}
                 >
                   <div className={fullyClosed ? 'opacity-25' : ''}>
@@ -108,14 +108,14 @@ export function CricketGame() {
                 </div>
 
                 {/* Number */}
-                <div className="flex items-center justify-center py-4 bg-paper active:bg-ink/10 transition-colors">
+                <div className="flex items-center justify-center bg-paper active:bg-ink/10 transition-colors">
                   <span className={`font-display font-black text-2xl ${fullyClosed ? 'text-ink-faint' : 'text-ink'}`}>
                     {label}
                   </span>
                 </div>
 
                 {/* P2 marks */}
-                <div className={`flex items-center justify-center px-4 py-4 border-l border-rule
+                <div className={`flex items-center justify-center px-4 border-l border-rule
                   ${active(1) && !fullyClosed ? 'bg-paper' : 'bg-bg'}`}
                 >
                   <div className={fullyClosed ? 'opacity-25' : ''}>
@@ -130,10 +130,10 @@ export function CricketGame() {
 
       {/* ── End Turn bar ── */}
       {winner === null && (
-        <div className="shrink-0 border-t border-rule">
+        <div className="shrink-0 border-t border-rule bg-bg md:flex md:justify-center">
           <button
             onClick={endTurn}
-            className="w-full py-4 bg-paper font-mono text-sm tracking-widest text-ink hover:bg-bg transition-colors cursor-pointer border-none"
+            className="w-full md:max-w-2xl py-4 bg-ink text-bg font-mono text-sm tracking-widest hover:opacity-80 transition-opacity cursor-pointer border-none"
           >
             END TURN
           </button>
