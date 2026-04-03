@@ -31,6 +31,23 @@ export function CricketGame() {
     }
   }, [])
 
+  useEffect(() => {
+    const keyMap: Record<string, number> = {
+      '1': 11, '2': 12, '3': 13, '4': 14,
+      '5': 15, '6': 16, '7': 17, '8': 18, '9': 19, '0': 20,
+      'b': 25, 'B': 25,
+    }
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'z' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); undo(); return }
+      if (winner !== null) return
+      if (e.key === 'Enter') { endTurn(); return }
+      const n = keyMap[e.key]
+      if (n !== undefined) addMark(n)
+    }
+    window.addEventListener('keydown', handler)
+    return () => window.removeEventListener('keydown', handler)
+  }, [winner, addMark, endTurn, undo])
+
   const numbers = config.numbers
   const name    = (p: 0 | 1) => p === 0 ? config.p1 : config.p2
   const active  = (p: 0 | 1) => current === p && winner === null
@@ -55,9 +72,9 @@ export function CricketGame() {
       </div>
 
       {/* ── Scoreboard ── */}
-      <div className="shrink-0 border-b border-rule">
+      <div className="shrink-0 bg-bg">
         <div className="flex md:justify-center">
-          <div className="w-full md:max-w-2xl flex">
+          <div className="w-full md:max-w-2xl md:border-x md:border-b border-b border-rule flex">
             {([0, 1] as const).map(p => (
               <div
                 key={p}
@@ -80,8 +97,8 @@ export function CricketGame() {
       </div>
 
       {/* ── Number grid ── */}
-      <div className="flex-1 min-h-0 bg-paper md:flex md:justify-center">
-        <div className="w-full md:max-w-2xl md:border-x md:border-rule flex flex-col">
+      <div className="flex-1 min-h-0 bg-bg md:flex md:justify-center">
+        <div className="w-full h-full md:max-w-2xl md:border-x md:border-rule flex flex-col">
           {numbers.map(n => {
             const [p1m, p2m] = marks[n] ?? [0, 0]
             const fullyClosed = p1m >= 3 && p2m >= 3
@@ -99,8 +116,10 @@ export function CricketGame() {
                 style={{ gridTemplateColumns: '1fr 5rem 1fr' }}
               >
                 {/* P1 marks */}
-                <div className={`flex items-center justify-center px-4 border-r border-rule
+                <div
+                  className={`flex items-center justify-center px-4 border-r border-rule
                   ${active(0) && !fullyClosed ? 'bg-paper' : 'bg-bg'}`}
+                  onClick={current === 1 ? e => e.stopPropagation() : undefined}
                 >
                   <div className={fullyClosed ? 'opacity-25' : ''}>
                     <Marks count={p1m} />
@@ -115,8 +134,10 @@ export function CricketGame() {
                 </div>
 
                 {/* P2 marks */}
-                <div className={`flex items-center justify-center px-4 border-l border-rule
+                <div
+                  className={`flex items-center justify-center px-4 border-l border-rule
                   ${active(1) && !fullyClosed ? 'bg-paper' : 'bg-bg'}`}
+                  onClick={current === 0 ? e => e.stopPropagation() : undefined}
                 >
                   <div className={fullyClosed ? 'opacity-25' : ''}>
                     <Marks count={p2m} />
@@ -130,7 +151,7 @@ export function CricketGame() {
 
       {/* ── End Turn bar ── */}
       {winner === null && (
-        <div className="shrink-0 border-t border-rule bg-bg md:flex md:justify-center">
+        <div className="shrink-0 bg-bg md:flex md:justify-center">
           <button
             onClick={endTurn}
             className="w-full md:max-w-2xl py-4 bg-ink text-bg font-mono text-sm tracking-widest hover:opacity-80 transition-opacity cursor-pointer border-none"
