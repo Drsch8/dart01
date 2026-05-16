@@ -9,6 +9,7 @@ import { QuickScores } from './QuickScores'
 import { Numpad } from './Numpad'
 import { FinishDartPicker } from './FinishDartPicker'
 import { WinnerPopup } from './WinnerPopup'
+import { SetWonPopup } from './SetWonPopup'
 
 export function GameScreen() {
   useKeyboard()
@@ -46,6 +47,7 @@ export function GameScreen() {
       </div>
 
       <FinishDartPicker />
+      <SetWonPopup />
       <WinnerPopup />
     </div>
   )
