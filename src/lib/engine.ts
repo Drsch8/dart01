@@ -267,7 +267,7 @@ export function resetLeg(state: GameState): GameState {
     totalScored: [0, 0],
     inputStr: '',
     inputMode: 'score',
-    current: (!state.config.training && state.current === 0) ? 1 : 0,
+    current: state.config.training ? 0 : (state.history.length % 2) as 0 | 1,
     allStats: newAllStats,
   }
 }
