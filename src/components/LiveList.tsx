@@ -97,24 +97,30 @@ export function LiveList() {
       <div className="flex justify-center">
       <div className={`grid ${gridCols} ${innerW}`}>
 
-        {rounds.map((round, i) => (
-          <Fragment key={i}>
-            {training && (
-              <div className={`${cR} text-ink-faint text-sm`}>{(i + 1) * 3}</div>
-            )}
-            {/* p0 score — outer left */}
-            <div className={cL}>{completedScore(round.p0)}</div>
-            {/* p0 remain — toward center */}
-            <div className={cR}>{completedRemain(round.p0)}</div>
-            {!training && (
-              <div className={`${cC} text-ink-faint text-sm`}>{(i + 1) * 3}</div>
-            )}
-            {/* p1 remain — toward center */}
-            {!training && <div className={cL}>{completedRemain(round.p1)}</div>}
-            {/* p1 score — outer right */}
-            {!training && <div className={cR}>{completedScore(round.p1)}</div>}
-          </Fragment>
-        ))}
+        {(() => {
+          const p2Started = rounds.length > 0 && rounds[0].p0 === null
+          const displayRounds = p2Started
+            ? rounds.map((round, i) => ({ p0: rounds[i + 1]?.p0 ?? null, p1: round.p1 }))
+            : rounds
+          return displayRounds.map((round, i) => (
+            <Fragment key={i}>
+              {training && (
+                <div className={`${cR} text-ink-faint text-sm`}>{(i + 1) * 3}</div>
+              )}
+              {/* p0 score — outer left */}
+              <div className={cL}>{completedScore(round.p0)}</div>
+              {/* p0 remain — toward center */}
+              <div className={cR}>{completedRemain(round.p0)}</div>
+              {!training && (
+                <div className={`${cC} text-ink-faint text-sm`}>{(i + 1) * 3}</div>
+              )}
+              {/* p1 remain — toward center */}
+              {!training && <div className={cL}>{completedRemain(round.p1)}</div>}
+              {/* p1 score — outer right */}
+              {!training && <div className={cR}>{completedScore(round.p1)}</div>}
+            </Fragment>
+          ))
+        })()}
 
         {/* Live row */}
         <Fragment key="live">
