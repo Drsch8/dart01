@@ -34,7 +34,7 @@ async function getData() {
   if (!supabase) return { career: [], recent: [] }
 
   const [careerRes, recentRes] = await Promise.all([
-    supabase.from('career_stats').select('*'),
+    supabase.from('career_stats').select('*').not('name', 'in', '("Player 1","Player 2")'),
     supabase
       .from('match_summaries')
       .select('id, played_at, p1_name, p2_name, winner, start_score, p1_sets, p2_sets, p1_legs_won, p2_legs_won, p1_avg, p2_avg')
