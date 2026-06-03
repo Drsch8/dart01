@@ -42,9 +42,13 @@ async function getData() {
       .limit(20),
   ])
 
+  const defaultNames = new Set(['Player 1', 'Player 2'])
+
   return {
-    career: (careerRes.data ?? []) as CareerRow[],
-    recent: (recentRes.data ?? []) as RecentMatch[],
+    career: ((careerRes.data ?? []) as CareerRow[]).filter(r => !defaultNames.has(r.name)),
+    recent: ((recentRes.data ?? []) as RecentMatch[]).filter(
+      m => !defaultNames.has(m.p1_name) && !defaultNames.has(m.p2_name)
+    ),
   }
 }
 
