@@ -139,7 +139,7 @@ export function CricketGame() {
                 <div
                   className="flex items-center justify-center transition-colors duration-75"
                   style={{
-                    backgroundColor: activeRow === n ? 'rgba(26,26,24,0.12)' : 'var(--paper)',
+                    backgroundColor: 'var(--paper)',
                   }}
                 >
                   <span className={`font-display font-black text-2xl ${fullyClosed ? 'text-ink-faint' : 'text-ink'}`}>
