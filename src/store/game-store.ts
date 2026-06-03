@@ -1,6 +1,6 @@
 'use client'
 import { create } from 'zustand'
-import type { GameConfig, GameState, Screen, PendingCheckout } from '@/types/game'
+import type { GameConfig, GameState, Screen, PendingCheckout, LegHistory } from '@/types/game'
 import {
   createInitialGameState,
   processEnterScore,
@@ -14,9 +14,16 @@ import {
 import { saveMatch } from '@/lib/save-match'
 import { REM_SENTINEL, FINISH_SENTINEL } from '@/lib/constants'
 
+export interface PendingSetWon {
+  winnerName: string
+  sets: [number, number]
+  setHistory: LegHistory[]
+}
+
 interface GameStore extends GameState {
   screen: Screen
   pendingCheckout: PendingCheckout | null
+  pendingSetWon: PendingSetWon | null
   matchFinished: boolean
   winnerName: string | null
   snapshotBeforeCheckout: GameState | null
@@ -28,6 +35,7 @@ interface GameStore extends GameState {
   enterScore: () => void
   quickScore: (value: number) => void
   confirmFinishDart: (darts: 1 | 2 | 3) => void
+  continueToNextSet: () => void
   dismissWinner: () => void
   undoWinner: () => void
   rematch: () => void
@@ -51,6 +59,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
   // ── Initial state ──
   screen: 'setup',
   pendingCheckout: null,
+  pendingSetWon: null,
   matchFinished: false,
   winnerName: null,
   snapshotBeforeCheckout: null,
@@ -59,7 +68,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
   // ── Actions ──
 
   startGame: (config) => {
-    set({ screen: 'game', pendingCheckout: null, matchFinished: false, winnerName: null, snapshotBeforeCheckout: null, ...createInitialGameState(config) })
+    set({ screen: 'game', pendingCheckout: null, pendingSetWon: null, matchFinished: false, winnerName: null, snapshotBeforeCheckout: null, ...createInitialGameState(config) })
   },
 
   appendDigit: (digit) => {
@@ -118,7 +127,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
     const outcome = processCheckout(pendingCheckout, darts)
     set({ pendingCheckout: null })
 
-    const { state, winner, matchWon } = outcome
+    const { state, winner, setWon, matchWon } = outcome
 
     if (matchWon) {
       const winnerName = winner === 0 ? state.config.p1 : state.config.p2
@@ -131,10 +140,23 @@ export const useGameStore = create<GameStore>((set, get) => ({
         })
       }
       set({ ...state, matchFinished: true, winnerName: state.config.training ? null : winnerName, screen: state.config.training ? 'stats' : 'game' })
+    } else if (setWon && state.config.setsToWin > 1) {
+      const winnerName = winner === 0 ? state.config.p1 : state.config.p2
+      const newSets = state.sets
+      const prevSets: [number, number] = [newSets[0], newSets[1]]
+      prevSets[winner]--
+      const setHistory = state.history.filter(h =>
+        (h.setsAfter[0] === prevSets[0] && h.setsAfter[1] === prevSets[1]) ||
+        (h.setsAfter[0] === newSets[0] && h.setsAfter[1] === newSets[1])
+      )
+      set({ ...state, pendingSetWon: { winnerName, sets: newSets, setHistory } })
     } else {
-      // Auto-advance to next leg without any overlay
       set({ ...resetLeg(state) })
     }
+  },
+
+  continueToNextSet: () => {
+    set(s => ({ ...resetLeg(gs(s)), pendingSetWon: null }))
   },
 
   dismissWinner: () => {
@@ -150,7 +172,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
   rematch: () => {
     const config = get().config
-    set({ screen: 'game', pendingCheckout: null, matchFinished: false, winnerName: null, snapshotBeforeCheckout: null, ...createInitialGameState(config) })
+    set({ screen: 'game', pendingCheckout: null, pendingSetWon: null, matchFinished: false, winnerName: null, snapshotBeforeCheckout: null, ...createInitialGameState(config) })
   },
 
   undo: () => {

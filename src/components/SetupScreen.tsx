@@ -119,6 +119,7 @@ export function SetupScreen() {
       training: trainingMode === 'training',
     }
     startGame(config)
+    window.scrollTo(0, 0)
   }
 
   const input = 'w-full border border-rule bg-bg px-3 py-2 font-mono text-sm text-ink outline-none focus:border-ink'

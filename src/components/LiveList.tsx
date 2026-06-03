@@ -38,6 +38,17 @@ export function LiveList() {
 
   // 2-player: p0_score | p0_remain | dart# | p1_remain | p1_score
   // training:  dart# | p0_score | p0_remain
+  const p2Started = !training && rounds.length > 0 && rounds[0].p0 === null
+  // When P2 started, the last rounds entry has P2's score but no P1 yet.
+  // We fold it into the live row so P1's input and P2's score share one row.
+  const p2LiveEntry = p2Started ? (rounds[rounds.length - 1]?.p1 ?? null) : null
+  const completedRounds = p2Started
+    ? rounds.slice(0, -1).map((round, i) => ({ p0: rounds[i + 1]!.p0, p1: round.p1 }))
+    : rounds
+  const liveDartNum = p2Started
+    ? (current === 0 ? rounds.length : rounds.length + 1)
+    : rounds.length + 1
+
   const gridCols = training
     ? 'grid-cols-[2.5rem_1fr_1fr]'
     : 'grid-cols-[minmax(0,1fr)_minmax(0,1fr)_2.5rem_minmax(0,1fr)_minmax(0,1fr)]'
@@ -97,7 +108,7 @@ export function LiveList() {
       <div className="flex justify-center">
       <div className={`grid ${gridCols} ${innerW}`}>
 
-        {rounds.map((round, i) => (
+        {completedRounds.map((round, i) => (
           <Fragment key={i}>
             {training && (
               <div className={`${cR} text-ink-faint text-sm`}>{(i + 1) * 3}</div>
@@ -138,11 +149,15 @@ export function LiveList() {
 
           {!training && <>
             {/* dart# center */}
-            <div className={`${cC} text-ink-faint text-sm`}>{(rounds.length + 1) * 3}</div>
+            <div className={`${cC} text-ink-faint text-sm`}>{liveDartNum * 3}</div>
 
             {/* P1 remain — toward center */}
             <div className={cL}>
-              {currentRound.p1 ? completedRemain(currentRound.p1) : null}
+              {currentRound.p1
+                ? completedRemain(currentRound.p1)
+                : (p2LiveEntry && current === 0)
+                  ? completedRemain(p2LiveEntry)
+                  : null}
             </div>
 
             {/* P1 score — outer right */}
@@ -151,7 +166,9 @@ export function LiveList() {
                 ? completedScore(currentRound.p1)
                 : current === 1
                   ? activeScore()
-                  : null}
+                  : (p2LiveEntry && current === 0)
+                    ? completedScore(p2LiveEntry)
+                    : null}
             </div>
           </>}
         </Fragment>
