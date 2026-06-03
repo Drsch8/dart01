@@ -34,21 +34,25 @@ async function getData() {
   if (!supabase) return { career: [], recent: [] }
 
   const [careerRes, recentRes] = await Promise.all([
-    supabase.from('career_stats').select('*').not('name', 'in', '("Player 1","Player 2")'),
+    supabase
+      .from('career_stats')
+      .select('*')
+      .neq('name', 'Player 1')
+      .neq('name', 'Player 2'),
     supabase
       .from('match_summaries')
       .select('id, played_at, p1_name, p2_name, winner, start_score, p1_sets, p2_sets, p1_legs_won, p2_legs_won, p1_avg, p2_avg')
+      .neq('p1_name', 'Player 1')
+      .neq('p1_name', 'Player 2')
+      .neq('p2_name', 'Player 1')
+      .neq('p2_name', 'Player 2')
       .order('played_at', { ascending: false })
       .limit(20),
   ])
 
-  const defaultNames = new Set(['Player 1', 'Player 2'])
-
   return {
-    career: ((careerRes.data ?? []) as CareerRow[]).filter(r => !defaultNames.has(r.name)),
-    recent: ((recentRes.data ?? []) as RecentMatch[]).filter(
-      m => !defaultNames.has(m.p1_name) && !defaultNames.has(m.p2_name)
-    ),
+    career: (careerRes.data ?? []) as CareerRow[],
+    recent: (recentRes.data ?? []) as RecentMatch[],
   }
 }
 
