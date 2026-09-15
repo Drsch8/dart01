@@ -15,7 +15,8 @@
   --ink-faint: #5d646f;
   --rule: #1e222a;        /* hairline separators */
   --rule-strong: #303643; /* outlined buttons */
-  --accent: #d63a26;      /* thrower bar, selected chips */
+  --p1: #d63a26;          /* first player marker */
+  --accent: var(--p1);      /* thrower bar, selected chips */
   --accent-dim: #7d2418;
   --p2: #2f6fe8;          /* second player marker */
   --finish: #35c66b;

@@ -11,12 +11,7 @@ export function QuickScores() {
   const canFinish = isFinishable(currentScore)
 
   return (
-    <div className="shrink-0">
-      <div className="flex items-center justify-between px-4 py-1.5 border-t border-rule">
-        <span className="font-cond text-[11px] font-semibold tracking-label text-ink-faint">QUICK SCORE</span>
-        <span className="hidden md:inline font-cond text-[11px] font-semibold tracking-label text-ink-faint">F1–F12</span>
-      </div>
-
+    <div className="shrink-0 border-t border-rule-strong pt-1">
       <div className="grid grid-cols-6 md:grid-cols-12 gap-0.5 bg-bg px-0.5 pb-0.5">
         {QUICK_SCORE_VALUES.map((val, i) => {
           const isFinish = val === FINISH_SENTINEL
@@ -34,7 +29,7 @@ export function QuickScores() {
               onClick={() => quickScore(val)}
               onTouchEnd={e => (e.currentTarget as HTMLElement).blur()}
               className={`py-3 text-center select-none cursor-pointer border-none outline-none touch-none
-                transition-colors active:scale-[0.97] transition-transform duration-75
+                transition-[background-color,transform] active:scale-[0.97] duration-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-ink
                 ${isWord
                   ? 'font-cond text-[15px] font-bold tracking-caps uppercase'
                   : 'font-num text-2xl md:text-xl leading-none'}

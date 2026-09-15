@@ -1,5 +1,6 @@
 'use client'
 import { useEffect } from 'react'
+import { useGameStore } from '@/store/game-store'
 import { useKeyboard } from '@/hooks/use-keyboard'
 import { GameHeader } from './GameHeader'
 import { Scoreboard } from './Scoreboard'
@@ -10,6 +11,7 @@ import { WinnerPopup } from './WinnerPopup'
 import { SetWonPopup } from './SetWonPopup'
 
 export function GameScreen() {
+  const current = useGameStore(s => s.current)
   useKeyboard()
 
   useEffect(() => {
@@ -23,7 +25,7 @@ export function GameScreen() {
   }, [])
 
   return (
-    <div className="h-dvh bg-bg flex flex-col overflow-hidden">
+    <div className={`h-dvh bg-bg flex flex-col overflow-hidden ${current === 1 ? '[--accent:var(--p2)]' : '[--accent:var(--p1)]'}`}>
       <GameHeader />
 
       {/* ── Desktop: centered column ── */}
