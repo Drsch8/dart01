@@ -89,6 +89,33 @@ jobs:
               ;;
           esac
 
+          # Take the password out of the URI and hand it to psql via PGPASSWORD.
+          # Supabase shows the URI with the raw password pasted in, and a
+          # password containing %, @, &, # etc. is not valid inside a URI —
+          # psql then rejects it and echoes the offending fragment in its error.
+          # GitHub only masks the secret as a whole, so that fragment (i.e. the
+          # password) would be printed in a public log. Splitting on the LAST
+          # '@' and the FIRST ':' after the scheme works for any password.
+          rest="${SUPABASE_DB_URL#*://}"
+          creds="${rest%@*}"
+          hostpart="${rest##*@}"
+          dbuser="${creds%%:*}"
+          dbpass="${creds#*:}"
+          if [ "$creds" = "$rest" ] || [ "$dbpass" = "$creds" ] || [ -z "$dbpass" ]; then
+            echo "::error::SUPABASE_DB_URL has no user:password@ part. Paste the Session pooler URI with [YOUR-PASSWORD] replaced."
+            exit 1
+          fi
+          # Accept an already URL-encoded password too: decode only when every
+          # % starts a valid %XX escape; otherwise the % is part of the password.
+          if [[ "$dbpass" == *%* ]] && ! printf '%s' "$dbpass" | grep -qE '%($|[^0-9A-Fa-f]|[0-9A-Fa-f]($|[^0-9A-Fa-f]))'; then
+            dbpass=$(printf '%b' "${dbpass//%/\\x}")
+          fi
+          # Mask the bare password too (escaping % as workflow commands require).
+          echo "::add-mask::${dbpass//%/%25}"
+          export PGPASSWORD="$dbpass"
+          dburl="postgresql://${dbuser}@${hostpart}"
+          unset SUPABASE_DB_URL dbpass creds rest
+
           # psql is preinstalled on ubuntu-latest runners; install only if not.
           command -v psql >/dev/null || { sudo apt-get update -qq && sudo apt-get install -y -qq postgresql-client; }
 
@@ -96,7 +123,7 @@ jobs:
 
           # One transaction of real work: insert + prune (WAL), update the
           # heartbeat, read the tables the app reads, then verify the write.
-          psql "$SUPABASE_DB_URL" -v ON_ERROR_STOP=1 -X -q -t -A <<'SQL' | tee psql.out
+          psql "$dburl" -v ON_ERROR_STOP=1 -X -q -t -A <<'SQL' | tee psql.out
           BEGIN;
           INSERT INTO heartbeat_log (source) VALUES ('gh-actions');
           DELETE FROM heartbeat_log WHERE created_at < now() - interval '30 days';
