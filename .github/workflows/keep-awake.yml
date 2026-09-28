@@ -1,32 +1,45 @@
 name: Keep Supabase awake
 
-# Supabase pauses a free project after 7 days with no database activity.
+# Supabase pauses a free project after 7 days of inactivity.
 #
-# The first version of this workflow issued an anon SELECT through PostgREST.
-# That ran green on schedule from 2026-09-03 and Supabase *still* sent a pause
-# warning on 2026-09-07 — so a read does not count. This version performs a
-# write instead, which produces WAL and disk activity that cannot be mistaken
-# for an idle project.
+# History:
+#   v1  anon SELECT through PostgREST  -> pause warning anyway (2026-09-07)
+#   v2  anon PATCH of a heartbeat row  -> green daily, pause warning anyway
+#   v3  (this file) behave like a real user of the project:
+#         1. print the project ref, so it can be matched against the warning
+#            email — a keepalive aimed at the wrong project looks identical
+#         2. open a real Postgres session via the connection pooler and
+#            INSERT / UPDATE / DELETE / SELECT on actual tables
+#         3. the same REST reads the app makes, plus the heartbeat PATCH
+#         4. touch Auth and Storage
+#
+# One-time setup:
+#   - Run supabase/migrations/005_heartbeat_log.sql in the SQL editor.
+#   - Add repo secret SUPABASE_DB_URL: Dashboard -> Connect -> "Session pooler"
+#     URI, with the database password filled in. Use the pooler URI: the direct
+#     db.<ref>.supabase.co host is IPv6-only and GitHub runners cannot reach it.
+#   - SUPABASE_URL and SUPABASE_ANON_KEY stay as before.
 
 on:
   schedule:
-    # Daily. The window is 7 days; a day of margin means several runs can be
-    # missed (GitHub drops scheduled runs under load) without the project
-    # lapsing.
-    - cron: '0 6 * * *'
+    # Twice daily, off the top of the hour (GitHub drops scheduled runs under
+    # load, most often at :00). The window is 7 days, so many misses are fine.
+    - cron: '17 5 * * *'
+    - cron: '17 17 * * *'
   workflow_dispatch:        # also runnable by hand from the Actions tab
 
 permissions:
   contents: write           # used only by the repo-keepalive step below
 
 jobs:
-  ping:
+  keepalive:
     runs-on: ubuntu-latest
+    env:
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+      SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
     steps:
-      - name: Write the heartbeat row
-        env:
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+      - name: Check secrets and identify the project
         run: |
           # Check the secrets first. Without this, a missing URL surfaces only as
           # `curl: (3) URL using bad/illegal format`, which is a confusing way to
@@ -48,65 +61,128 @@ jobs:
           esac
 
           base="${SUPABASE_URL%/}"   # tolerate a trailing slash on the secret
-          now=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+          host="${base#https://}"
+          ref="${host%%.*}"
+          echo "BASE=$base" >> "$GITHUB_ENV"
 
-          code=$(curl -sS -o response.json -w '%{http_code}' \
-            -X PATCH \
-            -H "apikey: $SUPABASE_ANON_KEY" \
-            -H "Authorization: Bearer $SUPABASE_ANON_KEY" \
-            -H "Content-Type: application/json" \
-            -H "Prefer: return=representation" \
-            -d "{\"pinged_at\":\"$now\"}" \
-            "$base/rest/v1/heartbeat?id=eq.1")
+          # The ref is already public in the site's JS bundle; printing it is
+          # the only way to confirm this job hits the project being warned about.
+          echo "Project ref: $ref"
+          {
+            echo "## Supabase keepalive"
+            echo ""
+            echo "Project ref: \`$ref\` — must match the project named in any pause-warning email."
+            echo ""
+          } >> "$GITHUB_STEP_SUMMARY"
 
-          echo "PATCH /heartbeat -> $code"
-
-          if [ "$code" = "200" ]; then
-            # return=representation echoes the updated rows. An empty array means
-            # the statement matched nothing, so nothing was actually written —
-            # a green run that did no work is exactly the failure being fixed.
-            if grep -q '"pinged_at"' response.json; then
-              echo "Heartbeat written at $now — pause timer reset."
-              cat response.json
-              exit 0
-            fi
-            echo "::error::Update matched no rows. The heartbeat row (id=1) is missing, or the RLS update policy is not in place. Re-run supabase/migrations/004_heartbeat.sql."
+      - name: Direct Postgres session (pooler)
+        run: |
+          if [ -z "$SUPABASE_DB_URL" ]; then
+            echo "::error::SUPABASE_DB_URL secret is not set. Add the Session pooler URI from Dashboard -> Connect (with the DB password). REST-only keepalives have already failed to prevent pause warnings."
             exit 1
           fi
+          case "$SUPABASE_DB_URL" in
+            postgres://*|postgresql://*) ;;
+            *)
+              echo "::error::SUPABASE_DB_URL must start with postgresql:// (value is ${#SUPABASE_DB_URL} chars)."
+              exit 1
+              ;;
+          esac
 
-          echo "Response body:"
-          cat response.json || true
-          echo
+          # psql is preinstalled on ubuntu-latest runners; install only if not.
+          command -v psql >/dev/null || { sudo apt-get update -qq && sudo apt-get install -y -qq postgresql-client; }
 
-          if [ "$code" = "404" ]; then
-            echo "::warning::No heartbeat table yet — apply supabase/migrations/004_heartbeat.sql. Falling back to a read so the project is not left untouched."
-            fallback=$(curl -sS -o fallback.json -w '%{http_code}' \
+          set -o pipefail   # otherwise `| tee` hides a psql failure
+
+          # One transaction of real work: insert + prune (WAL), update the
+          # heartbeat, read the tables the app reads, then verify the write.
+          psql "$SUPABASE_DB_URL" -v ON_ERROR_STOP=1 -X -q -t -A <<'SQL' | tee psql.out
+          BEGIN;
+          INSERT INTO heartbeat_log (source) VALUES ('gh-actions');
+          DELETE FROM heartbeat_log WHERE created_at < now() - interval '30 days';
+          UPDATE heartbeat SET pinged_at = now() WHERE id = 1;
+          SELECT 'match_summaries=' || count(*) FROM match_summaries;
+          SELECT 'career_stats=' || count(*) FROM career_stats;
+          SELECT 'heartbeat_log=' || count(*) FROM heartbeat_log;
+          DO $$
+          BEGIN
+            IF NOT EXISTS (SELECT 1 FROM heartbeat
+                           WHERE id = 1 AND pinged_at > now() - interval '1 minute') THEN
+              RAISE EXCEPTION 'heartbeat row missing or not updated — re-run 004_heartbeat.sql';
+            END IF;
+          END $$;
+          SELECT 'pinged_at=' || pinged_at FROM heartbeat WHERE id = 1;
+          COMMIT;
+          SQL
+
+          {
+            echo "### Postgres session"
+            echo '```'
+            cat psql.out
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: REST traffic (same calls as the app)
+        run: |
+          fail=0
+          call() {  # call <label> <curl args...>
+            label="$1"; shift
+            code=$(curl -sS -o body.json -w '%{http_code}' \
+              -H "apikey: $SUPABASE_ANON_KEY" \
+              -H "Authorization: Bearer $SUPABASE_ANON_KEY" "$@")
+            echo "$label -> $code"
+            echo "- $label → $code" >> "$GITHUB_STEP_SUMMARY"
+            case "$code" in
+              2*) return 0 ;;
+              *) echo "::error::$label returned $code"; cat body.json || true; echo; fail=1; return 1 ;;
+            esac
+          }
+
+          echo "### REST" >> "$GITHUB_STEP_SUMMARY"
+          call "GET career_stats"    "$BASE/rest/v1/career_stats?select=*&limit=5" || true
+          call "GET match_summaries" "$BASE/rest/v1/match_summaries?select=*&order=played_at.desc&limit=5" || true
+
+          now=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+          if call "PATCH heartbeat" -X PATCH \
+               -H "Content-Type: application/json" \
+               -H "Prefer: return=representation" \
+               -d "{\"pinged_at\":\"$now\"}" \
+               "$BASE/rest/v1/heartbeat?id=eq.1"; then
+            # An empty array means the PATCH matched nothing, so nothing was
+            # written — a green run that did no work.
+            if ! grep -q '"pinged_at"' body.json; then
+              echo "::error::Heartbeat PATCH matched no rows. Row id=1 or its RLS update policy is missing; re-run supabase/migrations/004_heartbeat.sql."
+              fail=1
+            fi
+          fi
+
+          exit $fail
+
+      - name: Auth and Storage (soft)
+        run: |
+          echo "### Auth / Storage" >> "$GITHUB_STEP_SUMMARY"
+          for path in auth/v1/health auth/v1/settings storage/v1/bucket; do
+            code=$(curl -sS -o /dev/null -w '%{http_code}' \
               -H "apikey: $SUPABASE_ANON_KEY" \
               -H "Authorization: Bearer $SUPABASE_ANON_KEY" \
-              "$base/rest/v1/players?select=*&limit=1")
-            echo "GET /players -> $fallback"
-            echo "::error::Heartbeat table missing; run the migration. A read alone has already proven insufficient to prevent pausing."
-            exit 1
-          fi
-
-          case "$code" in
-            401|403) echo "::error::Rejected ($code) — SUPABASE_ANON_KEY is wrong, or the heartbeat RLS policy is missing." ;;
-            5*) echo "::error::Supabase returned $code — likely a transient outage; tomorrow's run will retry." ;;
-            *) echo "::error::Unexpected status $code." ;;
-          esac
-          exit 1
+              "$BASE/$path") || code=000
+            echo "GET /$path -> $code"
+            echo "- GET /$path → $code" >> "$GITHUB_STEP_SUMMARY"
+            # Informational: these services may be unused by the app.
+            case "$code" in 2*) ;; *) echo "::warning::/$path returned $code" ;; esac
+          done
 
       # This repo is public, so GitHub auto-disables scheduled workflows after
       # 60 days with no repository activity — which would silently switch off
       # the keepalive above. The guard means no commit is made while the repo is
       # being worked on normally.
-      # v7 runs on node24; v4 targets the deprecated node20 and GitHub now
-      # force-migrates it, which is what raised the warning annotation.
       - uses: actions/checkout@v7
+        if: always()        # keep the schedule alive even when Supabase fails
         with:
           fetch-depth: 0    # full clone; pushing from a shallow one can be rejected
 
       - name: Reset the 60-day scheduled-workflow clock
+        if: always()
         run: |
           age=$(( ( $(date +%s) - $(git log -1 --format=%ct) ) / 86400 ))
           echo "Newest commit is $age day(s) old."
